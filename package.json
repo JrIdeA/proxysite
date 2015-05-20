@@ -1,0 +1,12 @@
+{
+  "name": "site_proxy",
+  "version": "0.0.1",
+  "description": "site proxy, provide url and content replacement",
+  "author": "JrIdeA",
+  "dependencies": {
+    "bluebird": "2.9.25",
+    "coffee-script": "1.9.2",
+    "colors": "1.1.0",
+    "commander": "2.8.1"
+  }
+}
