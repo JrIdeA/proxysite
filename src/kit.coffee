@@ -46,6 +46,13 @@ module.exports =
     isObject: (value) ->
         !!value and typeof value is 'object'
 
-    isString: (value) ->
-        typeof value is 'string'
-    
+    isEmptyOrNotObject: (value) ->
+        return false if !this.isObject(value)
+        for name of obj
+            return false
+        true
+
+    isArray: Array.isArray
+
+    isFullString: (value) ->
+        typeof value is 'string' and value.length

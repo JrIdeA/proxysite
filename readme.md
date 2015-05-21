@@ -18,19 +18,28 @@ module.exports =
     # 本机端口
     port: 8234
 
-    # 访问的url做替换
+    # 访问的url做替换，完全匹配
+    # '/abc' => '/bcd'
     urlMap: {}
 
     # 替换内容，只针对文本的 content-type 做替换,
     # 支持正则，若需要使用正则，key使用 '/reg/' 这样的形式
-    contentMap: {}
+    # [{'a': 'b'}, [//, 'abc']]
+    # {'a': 'b'}
+    replaceBody: []
+
+    # 内容替换默认处理小于 1MB 的文件，设置null则不限制大小
+    replaceLimit: 1024 * 1024
 
     # 自定义修改request的headers
-    reqHeaders: (headers) -> headers
+    # 所有headers的key为小写
+    handleReqHeaders: (headers) -> headers
 
     # 自定义修改respond的headers
-    resHeaders: (headers) -> headers
+    handleResHeaders: (headers) -> headers
 ```
+
+
 
 ## TODO
 - [] 基本实现
