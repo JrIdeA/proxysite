@@ -7,35 +7,6 @@ Promise = require 'bluebird'
 kit = require './kit'
 ip = kit.getIp()[0] or '127.0.0.1'
 
-# class SiteProxy
-#     constructor: (opts) ->
-#         if !opts.url
-#             throw new Error('No proxy url specified!')
-#
-#         if url.indexOf('http') != 0
-#             url = 'http://' + url
-#
-#         # FIXME 感觉url的处理还是有点疑问
-#         # if kit.isObject url
-#         #     url.protocol ?= 'http:'
-#         # else
-#         #     url = urlKit.parse url
-#         #     url.protocol ?= 'http:'
-#         #     delete url.host
-#         #
-#         # request = null
-#         # switch url.protocol
-#         #     when 'http:'
-#         #         { request } = require 'http'
-#         #     when 'https:'
-#         #         { request } = require 'https'
-#         #     else
-#         #         throw new Error('Protocol not supported: ' + opts.protocol)
-#
-#         @opts = opts
-#
-#     request: ->
-
 TEXT_MIME = [
     'application/json'
     'application/javascript'
@@ -82,88 +53,8 @@ resInnerError = (res) ->
     res._headers = null
     res.end()
 
-
-
-
-
-
-###*
- * @param opts
- *
- * ```coffee
-    from: url object
-    to: url object
-    urlMap
-    contentMap
-    handleReqHeaders
-    handleResHeaders
- * ```
-###
-proxy = (opts, req, res) ->
-    { from, to } = opts
-
-    # url replace
-    { pathname, search } = urlKit.parse req.url
-    if !kit.isEmptyOrNotObject opts.urlMap
-        pathname = opts.urlMap[pathname] or pathname
-        search = if search then search else ''
-    path = pathname + search
-
-    reqHeaders = opts.handleReqHeaders(req.headers) || {}
-    reqHeaders = formatHeaders reqHeaders
-    reqHeaders.referer = reqHeaders.referer.replace "http://#{from.hostname}/", "http://#{to.hostname}/"
-    reqHeaders.host = to.hostname
-
-    proxyReq = http.request {
-        hostname: to.hostname # F1 处理 opts.host
-        port: to.port
-        method: req.method
-        path
-        headers: reqHeaders
-    }, (proxyRes) ->
-        isReplaceContent opts, proxyRes
-            proxyRes.pipe res
-
-        # replace body
-        else
-
-            # decode body
-            switch proxyRes.headers['content-encoding']
-                when 'gzip'
-                    unzip = zlib.createGunzip()
-                when 'deflate'
-                    unzip = zlib.createInflat()
-                else
-                    unzip = null
-            if unzip
-                unzip.on 'error', (err) ->
-                    resInnerError(res)
-
-
-
-    proxyReq.on 'response', (proxyRes) ->
-        # TODO 会不会额外输出，会headers被改变
-        res.writeHead(
-            proxyRes.statusCode
-            opts.handleReqHeaders(proxyRes.headers)
-        )
-
-    res
-
-request = ->
-    http.request {
-        hostname
-        port
-        method
-        path # include querystring
-        headers
-        keepAlive
-    }, (res) ->
-
-
-
-proxy2 = (opts) ->
-    { from, to } = opts
+proxy = (opts) ->
+    to = opts.url
     replaceStreams = createReplaceStream opts.replaceBody
 
     (req, res) ->
@@ -204,14 +95,18 @@ proxy2 = (opts) ->
                     switch proxyRes.headers['content-encoding']
                         when 'gzip'
                             unzip = zlib.createGunzip()
+                            zip = zlib.createGzip()
                         when 'deflate'
-                            unzip = zlib.createInflat()
+                            unzip = zlib.createInflate()
+                            zip = zlib.createDeflate()
                         else
                             unzip = null
                     if unzip
                         unzip.on 'error', resPipeError
-                        allStream.push unzip
+                        allStream.unshift unzip
+                        allStream.push zip
 
+                    # stream
                     allStream.push res
                     allStream.forEach (stream) ->
                         upStream = upStream.pipe stream
@@ -219,6 +114,8 @@ proxy2 = (opts) ->
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
                     res.on 'finish', resolve res
+
+
 
 module.exports = (opts) ->
     ## url 通用处理开始
