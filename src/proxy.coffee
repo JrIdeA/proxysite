@@ -39,14 +39,27 @@ createReplaceStream = (conf, sub) ->
     r
 
 # 是否替换body的判断
-isReplaceContent = (opts, proxyRes) ->
-    contentType = proxyRes['content-type']
+isReplaceContent = (opts, resHeaders) ->
+    contentType = resHeaders['content-type']
     if kit.isEmptyOrNotObject opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
-    ( !+opts.replaceLimit or proxyRes['content-length'] < opts.replaceLimit )
+    ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
         return true
 
     return false
+
+# 替换cookie domain
+cookieReplace = (cookieArr, fromHostname, toHostname) ->
+    matchedCookie = '.' + toHostname
+    cookieArr.map (cookie) ->
+        if matchedArr = /;\s*domain=(.+)\s*(?:;|$)/.exec cookie
+            matched = matchedArr[1]
+            index = matchedCookie.lastIndexOf(matched)
+            if ~~index and index is matchedCookie.length - matched.length
+                return matched.replace /;\s*domain=(.+)\s*(;|$)/, (str, p1, p2, offset) ->
+                    return "; domain=#{p1}#{p2}"
+        return cookie
+
 
 resInnerError = (res) ->
     res.statusCode = 500
@@ -54,8 +67,22 @@ resInnerError = (res) ->
     res.end()
 
 proxy = (opts) ->
+    if !opts.url
+        throw new Error('No proxy url specified!')
+
     to = opts.url
+    if kit.isObject to
+        to.protocol ?= 'http:'
+    else
+        if to.indexOf('http') != 0
+            to = 'http://' + to
+        to = urlKit.parse to
+        to.protocol ?= 'http:'
+        delete to.host
+
     replaceStreams = createReplaceStream opts.replaceBody
+
+    kit.log to
 
     (req, res) ->
         new Promise (resolve, reject) ->
@@ -63,23 +90,46 @@ proxy = (opts) ->
             { pathname, search } = urlKit.parse req.url
             if !kit.isEmptyOrNotObject opts.urlMap
                 pathname = opts.urlMap[pathname] or pathname
-                search = if search then search else ''
+            search = if search then search else ''
             path = pathname + search
 
             # deal req headers
+            fromHostname = req.headers.host
             reqHeaders = opts.handleReqHeaders(req.headers) || {}
             reqHeaders = formatHeaders reqHeaders
-            reqHeaders.referer = reqHeaders.referer.replace "http://#{from.hostname}/", "http://#{to.hostname}/"
-            reqHeaders.host = to.hostname
+            reqHeaders.Host = to.hostname
+            if reqHeaders.Referer
+                reqHeaders.Referer = reqHeaders.Referer.replace "http://#{fromHostname}/", "http://#{to.hostname}/"
+
+            # debug start
+            kit.log 'req headers >>'
+            kit.log 'path: ' + path
+            kit.log 'pathname:' + pathname
+            kit.log 'search:' + search
+            kit.log reqHeaders
+            kit.log 'req params >>'
+            kit.log {
+                hostname: to.hostname # F1 处理 opts.host
+                port: to.port or 80
+                method: req.method
+                path
+                headers: reqHeaders
+            }
+            # debug end
 
             proxyReq = http.request {
-                hostname: to.hostname # F1 处理 opts.host
+                hostname: to.hostname
                 port: to.port
                 method: req.method
                 path
                 headers: reqHeaders
             }, (proxyRes) ->
-                if !isReplaceContent(opts, proxyRes)
+                # debug start
+                kit.log 'proxy res >>'.yellow
+                kit.log proxyRes.headers
+                # debug end
+                resHeaders = proxyRes.headers
+                if !isReplaceContent(opts, resHeaders)
                     proxyRes.pipe res
 
                 # replace body
@@ -92,7 +142,7 @@ proxy = (opts) ->
                     upStream = proxyRes
 
                     # decode body
-                    switch proxyRes.headers['content-encoding']
+                    switch resHeaders['content-encoding']
                         when 'gzip'
                             unzip = zlib.createGunzip()
                             zip = zlib.createGzip()
@@ -115,26 +165,24 @@ proxy = (opts) ->
                     res.on 'error', resPipeError
                     res.on 'finish', resolve res
 
+            proxyReq.on 'response', (proxyRes) ->
+                # debug start
+                kit.log 'response >> '.yellow
+                kit.log proxyRes.statusCode
+                kit.log proxyRes.headers
+                # debug end
+
+                resHeaders = opts.handleReqHeaders(proxyRes.headers)
+                if !kit.isEmptyOrNotObject resHeaders
+                    resHeaders = formatHeaders(resHeaders)
+
+                # TODO 会不会额外输出，会headers被改变
+                res.writeHead(
+                    proxyRes.statusCode
+                    resHeaders
+                )
+
+            req.pipe proxyReq
 
 
-module.exports = (opts) ->
-    ## url 通用处理开始
-    if !opts.url
-        throw new Error('No proxy url specified!')
-
-    if kit.isObject url
-        url.protocol ?= 'http:'
-    else
-        url = urlKit.parse url
-        url.protocol ?= 'http:'
-        delete url.host
-
-    opts.url = url
-    ## url 通用处理结束
-
-    server = http.createServer (req, res) ->
-        # http.request
-
-    port = opts.port
-    server.listen port
-    kit.log 'Server start at '.cyan + "#{ip}:#{port}"
+module.exports = proxy
