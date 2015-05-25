@@ -40,8 +40,17 @@ createReplaceStream = (conf, sub) ->
 
 # 是否替换body的判断
 isReplaceContent = (opts, resHeaders) ->
+
     contentType = resHeaders['content-type']
-    if kit.isEmptyOrNotObject opts.replaceBody and
+
+    console.log ' replace >> '.cyan
+    console.log resHeaders['content-type']
+    console.log !kit.isEmptyOrNotObject opts.replaceBody
+    console.log contentType.substr(0, 5) is 'text/'
+    console.log resHeaders['content-length'] + "," + (resHeaders['content-length'] < opts.replaceLimit)
+    console.log ' replace >> end '
+
+    if !kit.isEmptyOrNotObject opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
     ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
         return true
@@ -60,7 +69,7 @@ cookieReplace = (cookieArr, fromHostname, toHostname) ->
                 r = cookie.replace REX, (str, p1, p2, offset) ->
                     return "; domain=#{fromHostname}#{p2}"
                 return r
-        return undefined    
+        return undefined
     kit.compact cookieArr
 
 resInnerError = (res) ->
@@ -82,7 +91,7 @@ proxy = (opts) ->
         to.protocol ?= 'http:'
         delete to.host
 
-    replaceStreams = createReplaceStream opts.replaceBody
+    # replaceStreams = createReplaceStream opts.replaceBody
 
     kit.log to
 
@@ -103,7 +112,7 @@ proxy = (opts) ->
             if reqHeaders.Referer
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
-            # debug start
+            ### debug start
             kit.log 'req headers >>'
             kit.log 'path: ' + path
             kit.log 'pathname:' + pathname
@@ -118,6 +127,8 @@ proxy = (opts) ->
                 headers: reqHeaders
             }
             # debug end
+            ###
+            # kit.log 'proxy >> '.yellow + "#{to.hostname}:#{to.port or 80}#{path}"
 
             proxyReq = http.request {
                 hostname: to.hostname
@@ -126,21 +137,29 @@ proxy = (opts) ->
                 path
                 headers: reqHeaders
             }, (proxyRes) ->
+                ###
                 # debug start
                 kit.log 'proxy res >>'.yellow
                 kit.log proxyRes.headers
                 # debug end
+                ###
                 resHeaders = proxyRes.headers
+
                 if !isReplaceContent(opts, resHeaders)
+                    console.log '.pipe mode >>'.cyan
+
                     proxyRes.pipe res
 
                 # replace body
                 else
+                    console.log '.replace body >>'.cyan
+                    kit.log 'proxy >> '.yellow + "#{to.hostname}:#{to.port or 80}#{path}"
+
                     resPipeError = (err) ->
                         res.end()
                         reject err
 
-                    allStream = replaceStreams.slice()
+                    allStream = createReplaceStream opts.replaceBody
                     upStream = proxyRes
 
                     # decode body
@@ -161,18 +180,24 @@ proxy = (opts) ->
                     # stream
                     allStream.push res
                     allStream.forEach (stream) ->
+                        # console.log ' >>> '.cyan
+                        # upStream = upStream.pipe stream, end: false
                         upStream = upStream.pipe stream
+                    # upStream.pipe res
+                    # upStream.pipe upStream, end: true
 
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
-                    res.on 'finish', resolve res
+                    res.on 'finish', -> resolve res
 
             proxyReq.on 'response', (proxyRes) ->
+                ###
                 # debug start
                 kit.log 'response >> '.yellow
                 kit.log proxyRes.statusCode
                 kit.log proxyRes.headers
                 # debug end
+                ###
 
                 resHeaders = opts.handleReqHeaders(proxyRes.headers)
                 if !kit.isEmptyOrNotObject resHeaders
