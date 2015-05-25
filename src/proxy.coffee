@@ -51,15 +51,17 @@ isReplaceContent = (opts, resHeaders) ->
 # 替换cookie domain
 cookieReplace = (cookieArr, fromHostname, toHostname) ->
     matchedCookie = '.' + toHostname
-    cookieArr.map (cookie) ->
-        if matchedArr = /;\s*domain=(.+)\s*(?:;|$)/.exec cookie
+    REX = /;\s*domain=([^;]+)\s*(;|$)/
+    cookieArr = cookieArr.map (cookie) ->
+        if matchedArr = REX.exec cookie
             matched = matchedArr[1]
             index = matchedCookie.lastIndexOf(matched)
             if ~~index and index is matchedCookie.length - matched.length
-                return matched.replace /;\s*domain=(.+)\s*(;|$)/, (str, p1, p2, offset) ->
-                    return "; domain=#{p1}#{p2}"
-        return cookie
-
+                r = cookie.replace REX, (str, p1, p2, offset) ->
+                    return "; domain=#{fromHostname}#{p2}"
+                return r
+        return undefined    
+    kit.compact cookieArr
 
 resInnerError = (res) ->
     res.statusCode = 500
@@ -94,12 +96,12 @@ proxy = (opts) ->
             path = pathname + search
 
             # deal req headers
-            fromHostname = req.headers.host
+            from = urlKit.parse 'http://' + req.headers.host
             reqHeaders = opts.handleReqHeaders(req.headers) || {}
             reqHeaders = formatHeaders reqHeaders
             reqHeaders.Host = to.hostname
             if reqHeaders.Referer
-                reqHeaders.Referer = reqHeaders.Referer.replace "http://#{fromHostname}/", "http://#{to.hostname}/"
+                reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
             # debug start
             kit.log 'req headers >>'
@@ -174,6 +176,8 @@ proxy = (opts) ->
 
                 resHeaders = opts.handleReqHeaders(proxyRes.headers)
                 if !kit.isEmptyOrNotObject resHeaders
+                    if resHeaders['set-cookie']
+                        resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
                     resHeaders = formatHeaders(resHeaders)
 
                 # TODO 会不会额外输出，会headers被改变
