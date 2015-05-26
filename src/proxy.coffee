@@ -20,29 +20,49 @@ formatHeaders = (headers) ->
         newHeaders[nk] = v
     newHeaders
 
-createReplaceStream = (conf, sub) ->
+###*
+ * 格式化 replaceBody 的配置
+ * @return {Array|null} [ [replaceKey, replaceValue], ... ] 这样的格式
+###
+formatReplaceOpt = (opt, sub) ->
     r = []
 
-    if kit.isObject conf
-        for k, v of conf
-            r.push replace(k, String(v))
+    if kit.isObject opt
+        for k, v of opt
+            r.push [ k, String(v) ]
 
-    else if kit.isArray conf
-        confLen = conf.length
+    else if kit.isArray opt
+        optLen = opt.length
         if sub
-            if conf.length >= 2
-                r.push replace(conf[0], String(conf[1]))
+            if opt.length >= 2
+                r.push [ opt[0], String(opt[1]) ]
         else
-            if conf.length >= 2 and !kit.isArray(conf[0]) and kit.isString(conf[1])
-                r.concat createReplaceStream(conf, true)
-            for n, i in conf
-                # handle replaceBody: [{}, [], {}, []]
-                r.concat createReplaceStream(n, true)
+            if opt.length >= 2 and !kit.isArray(opt[0]) and kit.isString(opt[1])
+                r = r.concat formatReplaceOpt(opt, true)
+            else
+                for n, i in opt
+                    # handle replaceBody: [{}, [], {}, []]
+                    r = r.concat formatReplaceOpt(n, true)
+
+    return if r.length > 0 or sub then r else null
+
+createReplaceStream = (formatOpt) ->
+    r = []
+    for n, i in formatOpt
+        console.log ' >> '.red + "key:#{n[0]}, value: #{n[1]}"
+        r.push replace n[0], n[1]
     r
 
 isReplaceContent = (opts, resHeaders) ->
     contentType = resHeaders['content-type']
-    if !kit.isEmptyOrNotObject opts.replaceBody and
+    console.log ' >> isReplaceContent start'.red
+    console.log opts.replaceBody
+    console.log contentType
+    console.log ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME)
+    console.log ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
+
+
+    if opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
     ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
         return true
@@ -72,6 +92,12 @@ resInnerError = (res) ->
 proxy = (opts) ->
     if !opts.url
         throw new Error('No proxy url specified!')
+
+    opts.replaceBody = formatReplaceOpt opts.replaceBody
+    if opts.replaceBody
+        kit.log '\n>> replace body:'.cyan
+        for n in opts.replaceBody
+            kit.log '  '.cyan + n[0] + ' -> '.green + n[1]
 
     to = opts.url
     if kit.isObject to
@@ -124,6 +150,7 @@ proxy = (opts) ->
 
                 # replace body
                 else
+                    console.log 'replace body'.rainbow
                     allStream = createReplaceStream opts.replaceBody
                     upStream = proxyRes
 
@@ -158,8 +185,12 @@ proxy = (opts) ->
                 if !kit.isEmptyOrNotObject resHeaders
                     if resHeaders['set-cookie']
                         resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
-                    resHeaders = formatHeaders resHeaders, path
 
+                # TODO 由于替换内容时 content-length 不同于内容，会造成client校验错误，现先删去 content-length, 这不是好办法
+                if opts.replaceBody
+                    delete resHeaders['content-length']
+
+                resHeaders = formatHeaders resHeaders
                 res.writeHead proxyRes.statusCode, resHeaders
 
             req.on 'error', resPipeError
