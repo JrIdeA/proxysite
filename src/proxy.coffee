@@ -12,7 +12,7 @@ TEXT_MIME = [
     'application/javascript'
 ]
 
-# Uppercase first char of headers key
+# 大写 headers Key 的第一个字符
 formatHeaders = (headers) ->
     newHeaders = {}
     for k, v of headers
@@ -46,21 +46,17 @@ formatReplaceOpt = (opt, sub) ->
 
     return if r.length > 0 or sub then r else null
 
+# 创建body替换流
 createReplaceStream = (formatOpt) ->
     r = []
     for n, i in formatOpt
-        console.log ' >> '.red + "key:#{n[0]}, value: #{n[1]}"
         r.push replace n[0], n[1]
     r
 
+# 判断是否要替换body
 isReplaceContent = (opts, resHeaders) ->
     return false if !resHeaders['content-type']
     contentType = resHeaders['content-type'].split(';')[0]
-    console.log ' >> isReplaceContent start'.red
-    console.log opts.replaceBody
-    console.log contentType
-    console.log ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME)
-    console.log ( !('content-length' of resHeaders) or !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
 
     if opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
@@ -69,16 +65,16 @@ isReplaceContent = (opts, resHeaders) ->
 
     return false
 
-# replace cookie domain
+# 替换cookie domain
 cookieReplace = (cookieArr, fromHostname, toHostname) ->
     matchedCookie = '.' + toHostname
-    REX = /;\s*domain=([^;]+)\s*(;|$)/
+    REG = /;\s*domain=([^;]+)\s*(;|$)/
     cookieArr = cookieArr.map (cookie) ->
-        if matchedArr = REX.exec cookie
+        if matchedArr = REG.exec cookie
             matched = matchedArr[1]
             index = matchedCookie.lastIndexOf(matched)
             if ~~index and index is matchedCookie.length - matched.length
-                r = cookie.replace REX, (str, p1, p2, offset) ->
+                r = cookie.replace REG, (str, p1, p2, offset) ->
                     return "; domain=#{fromHostname}#{p2}"
                 return r
         return undefined
@@ -115,14 +111,14 @@ proxy = (opts) ->
             reject err
 
         new Promise (resolve, reject) ->
-            # url replace
+            # 替换 url
             { pathname, search } = urlKit.parse req.url
             if !kit.isEmptyOrNotObject opts.urlMap
                 pathname = opts.urlMap[pathname] or pathname
             search = if search then search else ''
             path = pathname + search
 
-            # handle req headers
+            # 处理 req headers
             from = urlKit.parse 'http://' + req.headers.host
             reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
             reqHeaders = formatHeaders reqHeaders
@@ -142,7 +138,8 @@ proxy = (opts) ->
                 delete requestParam.hostname
             opts.beforeProxy and opts.beforeProxy(requestParam)
 
-            toHost = requestParam.hostname + ':' + requestParam.port + requestParam.path
+            toHost = to.hostname + ':' + requestParam.port + requestParam.path
+            toHost += " (#{requestParam.host})".cyan if requestParam.host
             kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, (proxyRes) ->
@@ -151,12 +148,12 @@ proxy = (opts) ->
                 if !isReplaceContent(opts, resHeaders)
                     proxyRes.pipe res
 
-                # replace body
+                # 替换 body
                 else
                     allStream = createReplaceStream opts.replaceBody
                     upStream = proxyRes
 
-                    # decode body
+                    # body 压缩处理
                     switch resHeaders['content-encoding']
                         when 'gzip'
                             unzip = zlib.createGunzip()
