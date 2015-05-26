@@ -113,8 +113,8 @@ proxy = (opts) ->
         new Promise (resolve, reject) ->
             # 替换 url
             { pathname, search } = urlKit.parse req.url
-            if !kit.isEmptyOrNotObject opts.urlMap
-                pathname = opts.urlMap[pathname] or pathname
+            if !kit.isEmptyOrNotObject opts.pathMap
+                pathname = opts.pathMap[pathname] or pathname
             search = if search then search else ''
             path = pathname + search
 
