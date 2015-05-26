@@ -1,6 +1,7 @@
 colors = require 'colors'
+toString = Object.prototype.toString
 
-module.exports =
+kit =
     log: () ->
         console.log.apply console, arguments
     err: (msg) ->
@@ -26,7 +27,7 @@ module.exports =
         to
 
     ###*
-     * Get a list of local ip address
+     * 获得本地的ip地址数组
      * @return {Array}
     ###
     getIp: ->
@@ -43,16 +44,29 @@ module.exports =
             output = output.concat o
         output
 
-    isObject: (value) ->
-        !!value and typeof value is 'object'
+    isObject: (obj) ->
+        !!obj and '[object Object]' is toString.call obj
 
-    isEmptyOrNotObject: (value) ->
-        return false if !this.isObject(value)
+    isEmptyOrNotObject: (obj) ->
+        return true if !kit.isObject(obj)
         for name of obj
             return false
         true
 
     isArray: Array.isArray
 
+    isString: (value) ->
+        typeof value is 'string'
+
     isFullString: (value) ->
         typeof value is 'string' and value.length
+
+    # 将稀疏数组转换为密集数组
+    compact: (arr) ->
+        r = []
+        i = arr?.length
+        while i--
+            r.unshift arr[i] if arr[i] isnt undefined
+        r
+
+module.exports = kit
