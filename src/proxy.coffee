@@ -20,7 +20,6 @@ formatHeaders = (headers) ->
         newHeaders[nk] = v
     newHeaders
 
-# 根据参数创建文本替换流
 createReplaceStream = (conf, sub) ->
     r = []
 
@@ -29,27 +28,20 @@ createReplaceStream = (conf, sub) ->
             r.push replace(k, String(v))
 
     else if kit.isArray conf
-        for n, i in conf
-            if !sub
+        confLen = conf.length
+        if sub
+            if conf.length >= 2
+                r.push replace(conf[0], String(conf[1]))
+        else
+            if conf.length >= 2 and !kit.isArray(conf[0]) and kit.isString(conf[1])
+                r.concat createReplaceStream(conf, true)
+            for n, i in conf
                 # handle replaceBody: [{}, [], {}, []]
                 r.concat createReplaceStream(n, true)
-            else
-                continue if n.length < 2
-                r.push replace(r[0], String(r[1]))
     r
 
-# 是否替换body的判断
 isReplaceContent = (opts, resHeaders) ->
-
     contentType = resHeaders['content-type']
-
-    console.log ' replace >> '.cyan
-    console.log resHeaders['content-type']
-    console.log !kit.isEmptyOrNotObject opts.replaceBody
-    console.log contentType.substr(0, 5) is 'text/'
-    console.log resHeaders['content-length'] + "," + (resHeaders['content-length'] < opts.replaceLimit)
-    console.log ' replace >> end '
-
     if !kit.isEmptyOrNotObject opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
     ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
@@ -57,7 +49,7 @@ isReplaceContent = (opts, resHeaders) ->
 
     return false
 
-# 替换cookie domain
+# replace cookie domain
 cookieReplace = (cookieArr, fromHostname, toHostname) ->
     matchedCookie = '.' + toHostname
     REX = /;\s*domain=([^;]+)\s*(;|$)/
@@ -91,11 +83,11 @@ proxy = (opts) ->
         to.protocol ?= 'http:'
         delete to.host
 
-    # replaceStreams = createReplaceStream opts.replaceBody
-
-    kit.log to
-
     (req, res) ->
+        resPipeError = (err) ->
+            res.end()
+            reject err
+
         new Promise (resolve, reject) ->
             # url replace
             { pathname, search } = urlKit.parse req.url
@@ -104,61 +96,34 @@ proxy = (opts) ->
             search = if search then search else ''
             path = pathname + search
 
-            # deal req headers
+            # handle req headers
             from = urlKit.parse 'http://' + req.headers.host
-            reqHeaders = opts.handleReqHeaders(req.headers) || {}
+            reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
             reqHeaders = formatHeaders reqHeaders
             reqHeaders.Host = to.hostname
             if reqHeaders.Referer
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
-            ### debug start
-            kit.log 'req headers >>'
-            kit.log 'path: ' + path
-            kit.log 'pathname:' + pathname
-            kit.log 'search:' + search
-            kit.log reqHeaders
-            kit.log 'req params >>'
-            kit.log {
-                hostname: to.hostname # F1 处理 opts.host
-                port: to.port or 80
-                method: req.method
-                path
-                headers: reqHeaders
-            }
-            # debug end
-            ###
-            # kit.log 'proxy >> '.yellow + "#{to.hostname}:#{to.port or 80}#{path}"
+            toHost = "#{to.hostname}:#{to.port or 80}#{path}"
+            kit.log 'proxy >> '.yellow + toHost
 
-            proxyReq = http.request {
+            requestParam = {
                 hostname: to.hostname
                 port: to.port
                 method: req.method
                 path
                 headers: reqHeaders
-            }, (proxyRes) ->
-                ###
-                # debug start
-                kit.log 'proxy res >>'.yellow
-                kit.log proxyRes.headers
-                # debug end
-                ###
+            }
+            opts.beforeProxy and opts.beforeProxy(requestParam)
+
+            proxyReq = http.request requestParam, (proxyRes) ->
                 resHeaders = proxyRes.headers
 
                 if !isReplaceContent(opts, resHeaders)
-                    console.log '.pipe mode >>'.cyan
-
                     proxyRes.pipe res
 
                 # replace body
                 else
-                    console.log '.replace body >>'.cyan
-                    kit.log 'proxy >> '.yellow + "#{to.hostname}:#{to.port or 80}#{path}"
-
-                    resPipeError = (err) ->
-                        res.end()
-                        reject err
-
                     allStream = createReplaceStream opts.replaceBody
                     upStream = proxyRes
 
@@ -177,41 +142,28 @@ proxy = (opts) ->
                         allStream.unshift unzip
                         allStream.push zip
 
-                    # stream
                     allStream.push res
                     allStream.forEach (stream) ->
-                        # console.log ' >>> '.cyan
-                        # upStream = upStream.pipe stream, end: false
                         upStream = upStream.pipe stream
-                    # upStream.pipe res
-                    # upStream.pipe upStream, end: true
 
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
-                    res.on 'finish', -> resolve res
+                    res.on 'finish', ->
+                        kit.log ' done << '.green + toHost
+                        resolve res
 
             proxyReq.on 'response', (proxyRes) ->
-                ###
-                # debug start
-                kit.log 'response >> '.yellow
-                kit.log proxyRes.statusCode
-                kit.log proxyRes.headers
-                # debug end
-                ###
-
-                resHeaders = opts.handleReqHeaders(proxyRes.headers)
+                opts.proxyRes and opts.proxyRes(proxyRes)
+                resHeaders = opts.handleResHeaders proxyRes.headers, path
                 if !kit.isEmptyOrNotObject resHeaders
                     if resHeaders['set-cookie']
                         resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
-                    resHeaders = formatHeaders(resHeaders)
+                    resHeaders = formatHeaders resHeaders, path
 
-                # TODO 会不会额外输出，会headers被改变
-                res.writeHead(
-                    proxyRes.statusCode
-                    resHeaders
-                )
+                res.writeHead proxyRes.statusCode, resHeaders
+
+            req.on 'error', resPipeError
 
             req.pipe proxyReq
-
 
 module.exports = proxy
