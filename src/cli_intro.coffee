@@ -1,23 +1,23 @@
 cmd = require 'commander'
 path = require 'path'
+http = require 'http'
 cs = require 'colors/safe'
 kit = require './kit'
+proxy = require './proxy'
 { version } = require '../package.json'
-defaultConf = require './default_config'
+defaultOpts = require './default.config'
 
 cmd
     .version version
     .usage  '\n\n    siteproxy config.coffee'
     .parse process.argv
 
-# configFile = cmd.args[0] or cmd.args[1]
-# console.log cmd
-confFile = cmd.args[1]
+confFile = cmd.args[0] or cmd.args[1]
 
 try
-    if path.extname is '.coffee'
+    if '.coffee' is path.extname confFile
         require 'coffee-script/register'
-    conf = require path.resolve(confFile)
+    opts = require path.resolve(process.cwd(), confFile)
 catch err
     if cmd.args.length > 0
         kit.err err.stack
@@ -25,5 +25,17 @@ catch err
     else
         kit.err cs.red 'No config specified!'
 
-conf = kit.assign defaultConf, conf
-kit.log conf
+opts = kit.assign defaultOpts, opts
+kit.log opts
+
+ip = kit.getIp()[0] or '127.0.0.1'
+port = opts.port
+proxyHandler = proxy(opts)
+http.createServer (req, res) ->
+    promise = proxyHandler(req, res)
+    promise.catch (err) ->
+        kit.err '>> proxy err!'.red
+        kit.log err
+
+.listen port
+kit.log '\nServer start at '.cyan + "#{ip}:#{port}"
