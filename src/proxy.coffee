@@ -140,6 +140,9 @@ proxy = (opts) ->
                 path
                 headers: reqHeaders
             }
+            if opts.ip
+                requestParam.host = opts.ip
+                delete requestParam.hostname
             opts.beforeProxy and opts.beforeProxy(requestParam)
 
             proxyReq = http.request requestParam, (proxyRes) ->
