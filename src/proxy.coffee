@@ -54,17 +54,17 @@ createReplaceStream = (formatOpt) ->
     r
 
 isReplaceContent = (opts, resHeaders) ->
-    contentType = resHeaders['content-type']
+    return false if !resHeaders['content-type']
+    contentType = resHeaders['content-type'].split(';')[0]
     console.log ' >> isReplaceContent start'.red
     console.log opts.replaceBody
     console.log contentType
     console.log ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME)
-    console.log ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
-
+    console.log ( !('content-length' of resHeaders) or !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
 
     if opts.replaceBody and
     ( contentType.substr(0, 5) is 'text/' or contentType in TEXT_MIME) and
-    ( !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
+    ( !('content-length' of resHeaders) or !+opts.replaceLimit or resHeaders['content-length'] < opts.replaceLimit )
         return true
 
     return false
@@ -130,12 +130,9 @@ proxy = (opts) ->
             if reqHeaders.Referer
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
-            toHost = "#{to.hostname}:#{to.port or 80}#{path}"
-            kit.log 'proxy >> '.yellow + toHost
-
             requestParam = {
                 hostname: to.hostname
-                port: to.port
+                port: to.port or 80
                 method: req.method
                 path
                 headers: reqHeaders
@@ -144,6 +141,9 @@ proxy = (opts) ->
                 requestParam.host = opts.ip
                 delete requestParam.hostname
             opts.beforeProxy and opts.beforeProxy(requestParam)
+
+            toHost = requestParam.hostname + ':' + requestParam.port + requestParam.path
+            kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, (proxyRes) ->
                 resHeaders = proxyRes.headers
