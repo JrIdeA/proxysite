@@ -150,7 +150,6 @@ proxy = (opts) ->
 
                 # replace body
                 else
-                    console.log 'replace body'.rainbow
                     allStream = createReplaceStream opts.replaceBody
                     upStream = proxyRes
 
@@ -186,7 +185,9 @@ proxy = (opts) ->
                     if resHeaders['set-cookie']
                         resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
 
-                # TODO 由于替换内容时 content-length 不同于内容，会造成client校验错误，现先删去 content-length, 这不是好办法
+                # XXX
+                # 由于替换body时content-length不同于替换后的长度，会造成client端校验错误，
+                # 现先删去 content-length, 若处理完所有body再返回header，body过大则会造成client很长时间的等待
                 if opts.replaceBody
                     delete resHeaders['content-length']
 
