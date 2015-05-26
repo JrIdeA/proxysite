@@ -1,7 +1,7 @@
 {
-  "name": "site_proxy",
+  "name": "proxysite",
   "version": "0.0.1",
-  "description": "site proxy, provide url and content replacement",
+  "description": "好用的代理站点的工具",
   "author": "JrIdeA",
   "dependencies": {
     "bluebird": "2.9.25",
