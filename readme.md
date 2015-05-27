@@ -76,6 +76,7 @@ module.exports =
 
     ###*
      * 在代理发送请求前执行该回调, 供高级定制
+     * 注意：配置 opts.ip 的时候首先使用 requestParam.hostname
      * @param {Object} `requestParam` 传递给代理请求 http.request 的参数
     ###
     beforeProxy: (requestParam) ->
@@ -102,5 +103,5 @@ http.createServer (req, res) ->
 ```
 
 ## TODO
-- [] https的支持
-- [] 测试
+- [ ] https的支持
+- [ ] 测试

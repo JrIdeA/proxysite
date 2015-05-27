@@ -106,11 +106,11 @@ proxy = (opts) ->
         delete to.host
 
     (req, res) ->
-        resPipeError = (err) ->
-            res.end()
-            reject err
-
         new Promise (resolve, reject) ->
+            resPipeError = (err) ->
+                res.end()
+                reject err
+
             # 替换 url
             { pathname, search } = urlKit.parse req.url
             if !kit.isEmptyOrNotObject opts.pathMap
@@ -128,19 +128,18 @@ proxy = (opts) ->
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
             requestParam = {
-                hostname: to.hostname
+                host: to.hostname
                 port: to.port or 80
                 method: req.method
                 path
                 headers: reqHeaders
             }
             if opts.ip
-                requestParam.host = opts.ip
-                delete requestParam.hostname
+                requestParam.hostname = opts.ip
             opts.beforeProxy and opts.beforeProxy(requestParam)
 
-            toHost = to.hostname + ':' + requestParam.port + requestParam.path
-            toHost += " (#{requestParam.host})".cyan if requestParam.host
+            toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
+            toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
             kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, (proxyRes) ->
@@ -197,6 +196,13 @@ proxy = (opts) ->
 
                 resHeaders = formatHeaders resHeaders
                 res.writeHead proxyRes.statusCode, resHeaders
+
+            proxyReq.on 'error', (e) ->
+                if e and e.code in ['ECONNREFUSED', 'ENOTFOUND']
+                    kit.log ' fail << '.red + toHost + " (unreachable)".red
+                    resolve res
+                else
+                    resPipeError e
 
             req.on 'error', resPipeError
 

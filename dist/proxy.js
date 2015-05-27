@@ -149,13 +149,12 @@ proxy = function(opts) {
     delete to.host;
   }
   return function(req, res) {
-    var resPipeError;
-    resPipeError = function(err) {
-      res.end();
-      return reject(err);
-    };
     return new Promise(function(resolve, reject) {
-      var from, path, pathname, proxyReq, ref1, reqHeaders, requestParam, search, toHost;
+      var from, path, pathname, proxyReq, ref1, reqHeaders, requestParam, resPipeError, search, toHost;
+      resPipeError = function(err) {
+        res.end();
+        return reject(err);
+      };
       ref1 = urlKit.parse(req.url), pathname = ref1.pathname, search = ref1.search;
       if (!kit.isEmptyOrNotObject(opts.pathMap)) {
         pathname = opts.pathMap[pathname] || pathname;
@@ -172,20 +171,19 @@ proxy = function(opts) {
         reqHeaders.Referer = reqHeaders.Referer.replace("http://" + from.host + "/", "http://" + to.hostname + "/");
       }
       requestParam = {
-        hostname: to.hostname,
+        host: to.hostname,
         port: to.port || 80,
         method: req.method,
         path: path,
         headers: reqHeaders
       };
       if (opts.ip) {
-        requestParam.host = opts.ip;
-        delete requestParam.hostname;
+        requestParam.hostname = opts.ip;
       }
       opts.beforeProxy && opts.beforeProxy(requestParam);
-      toHost = to.hostname + ':' + requestParam.port + requestParam.path;
-      if (requestParam.host) {
-        toHost += (" (" + requestParam.host + ")").cyan;
+      toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path;
+      if (requestParam.hostname) {
+        toHost += (" (" + requestParam.hostname + ")").cyan;
       }
       kit.log('proxy >> '.yellow + toHost);
       proxyReq = http.request(requestParam, function(proxyRes) {
@@ -243,6 +241,15 @@ proxy = function(opts) {
         }
         resHeaders = formatHeaders(resHeaders);
         return res.writeHead(proxyRes.statusCode, resHeaders);
+      });
+      proxyReq.on('error', function(e) {
+        var ref2;
+        if (e && ((ref2 = e.code) === 'ECONNREFUSED' || ref2 === 'ENOTFOUND')) {
+          kit.log(' fail << '.red + toHost + " (unreachable)".red);
+          return resolve(res);
+        } else {
+          return resPipeError(e);
+        }
       });
       req.on('error', resPipeError);
       return req.pipe(proxyReq);
