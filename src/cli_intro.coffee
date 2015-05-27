@@ -1,7 +1,7 @@
+require 'colors'
 cmd = require 'commander'
 path = require 'path'
 http = require 'http'
-cs = require 'colors/safe'
 kit = require './kit'
 proxy = require './proxy'
 { version } = require '../package.json'
@@ -23,10 +23,9 @@ catch err
         kit.err err.stack
         process.exit 1
     else
-        kit.err cs.red 'No config specified!'
+        kit.err 'No config specified!'.red
 
 opts = kit.assign defaultOpts, opts
-kit.log opts
 
 ip = kit.getIp()[0] or '127.0.0.1'
 port = opts.port
@@ -38,4 +37,5 @@ http.createServer (req, res) ->
         kit.log err
 
 .listen port
-kit.log '\nServer start at '.cyan + "#{ip}:#{port}"
+kit.log '\nProxy Site: '.cyan + opts.url
+kit.log 'Server start at '.cyan + "#{ip}:#{port}"

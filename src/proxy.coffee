@@ -73,7 +73,7 @@ cookieReplace = (cookieArr, fromHostname, toHostname) ->
         if matchedArr = REG.exec cookie
             matched = matchedArr[1]
             index = matchedCookie.lastIndexOf(matched)
-            if ~~index and index is matchedCookie.length - matched.length
+            if ~index and index is matchedCookie.length - matched.length
                 r = cookie.replace REG, (str, p1, p2, offset) ->
                     return "; domain=#{fromHostname}#{p2}"
                 return r
@@ -120,7 +120,8 @@ proxy = (opts) ->
 
             # 处理 req headers
             from = urlKit.parse 'http://' + req.headers.host
-            reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
+            if opts.handleReqHeaders
+                reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
             reqHeaders = formatHeaders reqHeaders
             reqHeaders.Host = to.hostname
             if reqHeaders.Referer
@@ -180,14 +181,17 @@ proxy = (opts) ->
 
             proxyReq.on 'response', (proxyRes) ->
                 opts.proxyRes and opts.proxyRes(proxyRes)
-                resHeaders = opts.handleResHeaders proxyRes.headers, path
+                if opts.handleResHeaders
+                    resHeaders = opts.handleResHeaders proxyRes.headers, path
+                else
+                    resHeaders = proxyRes.headers
                 if !kit.isEmptyOrNotObject resHeaders
                     if resHeaders['set-cookie']
                         resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
 
                 # XXX
                 # 由于替换body时content-length不同于替换后的长度，会造成client端校验错误，
-                # 现先删去 content-length, 若处理完所有body再返回header，body过大则会造成client很长时间的等待
+                # 现先删去content-length，若处理完所有body再返回header，body过大则会造成client很长时间的等待
                 if opts.replaceBody
                     delete resHeaders['content-length']
 

@@ -4,6 +4,7 @@ toString = Object.prototype.toString
 kit =
     log: () ->
         console.log.apply console, arguments
+        
     err: (msg) ->
         console.error msg
 
