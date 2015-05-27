@@ -101,7 +101,7 @@ cookieReplace = function(cookieArr, fromHostname, toHostname) {
     if (matchedArr = REG.exec(cookie)) {
       matched = matchedArr[1];
       index = matchedCookie.lastIndexOf(matched);
-      if (~~index && index === matchedCookie.length - matched.length) {
+      if (~index && index === matchedCookie.length - matched.length) {
         r = cookie.replace(REG, function(str, p1, p2, offset) {
           return "; domain=" + fromHostname + p2;
         });
@@ -163,7 +163,9 @@ proxy = function(opts) {
       search = search ? search : '';
       path = pathname + search;
       from = urlKit.parse('http://' + req.headers.host);
-      reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
+      if (opts.handleReqHeaders) {
+        reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
+      }
       reqHeaders = formatHeaders(reqHeaders);
       reqHeaders.Host = to.hostname;
       if (reqHeaders.Referer) {
@@ -226,7 +228,11 @@ proxy = function(opts) {
       proxyReq.on('response', function(proxyRes) {
         var resHeaders;
         opts.proxyRes && opts.proxyRes(proxyRes);
-        resHeaders = opts.handleResHeaders(proxyRes.headers, path);
+        if (opts.handleResHeaders) {
+          resHeaders = opts.handleResHeaders(proxyRes.headers, path);
+        } else {
+          resHeaders = proxyRes.headers;
+        }
         if (!kit.isEmptyOrNotObject(resHeaders)) {
           if (resHeaders['set-cookie']) {
             resHeaders['set-cookie'] = cookieReplace(resHeaders['set-cookie'], from.hostname, to.hostname);

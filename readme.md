@@ -6,7 +6,7 @@
 编辑配置文件，比如 config.coffee
 ```coffee
 module.exports =
-    url: 'y.baidu.com'
+    url: 'jrist.me'
     port: 8888
 ```
 
@@ -41,7 +41,6 @@ module.exports =
     # 访问的url做替换，完全匹配
     # '/abc' => '/bcd'
     pathMap: {}
-
 
     ###*
      * 替换内容，只针对文本的 content-type 做替换，支持正则表达式
@@ -90,8 +89,9 @@ module.exports =
 ```
 
 ## 可编程接口
-将配置参数直接传递给 proxy，返回 `callback`
-接收两个参数:(req, res)，返回 Promise
+将配置参数直接传递给 proxy，
+返回函数接收两个参数:(req, res)，该函数返回`Promise`，
+例如：
 
 ```coffee
 proxy = require 'siteproxy/proxy'
@@ -100,3 +100,7 @@ handle = proxy opts
 http.createServer (req, res) ->
     handle(req, res)
 ```
+
+## TODO
+- [] https的支持
+- [] 测试

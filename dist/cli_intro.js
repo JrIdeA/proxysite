@@ -1,12 +1,12 @@
-var cmd, confFile, cs, defaultOpts, err, http, ip, kit, opts, path, port, proxy, proxyHandler, version;
+var cmd, confFile, defaultOpts, err, http, ip, kit, opts, path, port, proxy, proxyHandler, version;
+
+require('colors');
 
 cmd = require('commander');
 
 path = require('path');
 
 http = require('http');
-
-cs = require('colors/safe');
 
 kit = require('./kit');
 
@@ -31,13 +31,11 @@ try {
     kit.err(err.stack);
     process.exit(1);
   } else {
-    kit.err(cs.red('No config specified!'));
+    kit.err('No config specified!'.red);
   }
 }
 
 opts = kit.assign(defaultOpts, opts);
-
-kit.log(opts);
 
 ip = kit.getIp()[0] || '127.0.0.1';
 
@@ -54,4 +52,6 @@ http.createServer(function(req, res) {
   });
 }).listen(port);
 
-kit.log('\nServer start at '.cyan + (ip + ":" + port));
+kit.log('\nProxy Site: '.cyan + opts.url);
+
+kit.log('Server start at '.cyan + (ip + ":" + port));
