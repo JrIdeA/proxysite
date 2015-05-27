@@ -11,6 +11,7 @@
     "replacestream": "2.1.0"
   },
   "devDependencies": {
+    "mocha": "2.2.5",
     "nokit": "0.7.6"
   }
 }
