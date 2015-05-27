@@ -21,21 +21,26 @@ try
 catch err
     if cmd.args.length > 0
         kit.err err.stack
-        process.exit 1
     else
         kit.err 'No config specified!'.red
+    process.exit 1
 
 opts = kit.assign defaultOpts, opts
 
 ip = kit.getIp()[0] or '127.0.0.1'
 port = opts.port
-proxyHandler = proxy(opts)
+try
+    proxyHandler = proxy(opts)
+catch e
+    kit.err e.message.red
+    process.exit 1
+
 http.createServer (req, res) ->
     promise = proxyHandler(req, res)
     promise.catch (err) ->
         kit.err '>> proxy err!'.red
-        kit.log err
-
+        kit.err err
 .listen port
+
 kit.log '\nProxy Site: '.cyan + opts.url
 kit.log 'Server start at '.cyan + "#{ip}:#{port}"
