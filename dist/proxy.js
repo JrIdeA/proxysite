@@ -218,7 +218,7 @@ proxy = function(opts) {
           proxyRes.on('error', resPipeError);
           res.on('error', resPipeError);
           return res.on('finish', function() {
-            kit.log(' done << '.green + toHost);
+            kit.log((" done << (" + res.statusCode + ") ").green + toHost);
             return resolve(res);
           });
         }
