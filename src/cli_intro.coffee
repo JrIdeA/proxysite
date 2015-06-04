@@ -1,7 +1,7 @@
+require 'colors'
 cmd = require 'commander'
 path = require 'path'
 http = require 'http'
-cs = require 'colors/safe'
 kit = require './kit'
 proxy = require './proxy'
 { version } = require '../package.json'
@@ -10,9 +10,12 @@ defaultOpts = require './default.config'
 cmd
     .version version
     .usage  '\n\n    siteproxy config.coffee'
+    .option '-u, --url', 'proxy url'
+    .option '-i, --ip', 'force remote ip'
+    .option '-p, --port', 'local server port'
     .parse process.argv
 
-confFile = cmd.args[0] or cmd.args[1]
+confFile = cmd.args[0]
 
 try
     if '.coffee' is path.extname confFile
@@ -21,21 +24,26 @@ try
 catch err
     if cmd.args.length > 0
         kit.err err.stack
-        process.exit 1
     else
-        kit.err cs.red 'No config specified!'
+        kit.err 'No config specified!'.red
+    process.exit 1
 
 opts = kit.assign defaultOpts, opts
-kit.log opts
 
 ip = kit.getIp()[0] or '127.0.0.1'
 port = opts.port
-proxyHandler = proxy(opts)
+try
+    proxyHandler = proxy(opts)
+catch e
+    kit.err e.message.red
+    process.exit 1
+
 http.createServer (req, res) ->
     promise = proxyHandler(req, res)
     promise.catch (err) ->
         kit.err '>> proxy err!'.red
-        kit.log err
-
+        kit.err err
 .listen port
-kit.log '\nServer start at '.cyan + "#{ip}:#{port}"
+
+kit.log '\nProxy Site: '.cyan + opts.url
+kit.log 'Server start at '.cyan + "#{ip}:#{port}"

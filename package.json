@@ -2,7 +2,20 @@
   "name": "proxysite",
   "version": "0.0.1",
   "description": "好用的代理站点的工具",
+  "main": "dist/proxy.js",
+  "bin": {
+    "proxysite": "bin/proxysite.js"
+  },
   "author": "JrIdeA",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JrIdeA/proxysite.git"
+  },
+  "keywords": [
+    "proxy",
+    "agent",
+    "tool"
+  ],
   "dependencies": {
     "bluebird": "2.9.25",
     "coffee-script": "1.9.2",

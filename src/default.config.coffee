@@ -2,7 +2,7 @@ module.exports =
     url: ''
     ip: null
     port: 8234
-    urlMap: {}
+    pathMap: {}
     replaceBody: []
     replaceLimit: 1048576 # 1024 * 1024
     handleReqHeaders: (headers) -> headers

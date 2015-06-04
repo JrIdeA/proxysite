@@ -101,7 +101,7 @@ cookieReplace = function(cookieArr, fromHostname, toHostname) {
     if (matchedArr = REG.exec(cookie)) {
       matched = matchedArr[1];
       index = matchedCookie.lastIndexOf(matched);
-      if (~~index && index === matchedCookie.length - matched.length) {
+      if (~index && index === matchedCookie.length - matched.length) {
         r = cookie.replace(REG, function(str, p1, p2, offset) {
           return "; domain=" + fromHostname + p2;
         });
@@ -149,13 +149,12 @@ proxy = function(opts) {
     delete to.host;
   }
   return function(req, res) {
-    var resPipeError;
-    resPipeError = function(err) {
-      res.end();
-      return reject(err);
-    };
     return new Promise(function(resolve, reject) {
-      var from, path, pathname, proxyReq, ref1, reqHeaders, requestParam, search, toHost;
+      var from, path, pathname, proxyReq, ref1, reqHeaders, requestParam, resPipeError, search, toHost;
+      resPipeError = function(err) {
+        res.end();
+        return reject(err);
+      };
       ref1 = urlKit.parse(req.url), pathname = ref1.pathname, search = ref1.search;
       if (!kit.isEmptyOrNotObject(opts.pathMap)) {
         pathname = opts.pathMap[pathname] || pathname;
@@ -163,27 +162,28 @@ proxy = function(opts) {
       search = search ? search : '';
       path = pathname + search;
       from = urlKit.parse('http://' + req.headers.host);
-      reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
+      if (opts.handleReqHeaders) {
+        reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
+      }
       reqHeaders = formatHeaders(reqHeaders);
       reqHeaders.Host = to.hostname;
       if (reqHeaders.Referer) {
         reqHeaders.Referer = reqHeaders.Referer.replace("http://" + from.host + "/", "http://" + to.hostname + "/");
       }
       requestParam = {
-        hostname: to.hostname,
+        host: to.hostname,
         port: to.port || 80,
         method: req.method,
         path: path,
         headers: reqHeaders
       };
       if (opts.ip) {
-        requestParam.host = opts.ip;
-        delete requestParam.hostname;
+        requestParam.hostname = opts.ip;
       }
       opts.beforeProxy && opts.beforeProxy(requestParam);
-      toHost = to.hostname + ':' + requestParam.port + requestParam.path;
-      if (requestParam.host) {
-        toHost += (" (" + requestParam.host + ")").cyan;
+      toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path;
+      if (requestParam.hostname) {
+        toHost += (" (" + requestParam.hostname + ")").cyan;
       }
       kit.log('proxy >> '.yellow + toHost);
       proxyReq = http.request(requestParam, function(proxyRes) {
@@ -226,7 +226,11 @@ proxy = function(opts) {
       proxyReq.on('response', function(proxyRes) {
         var resHeaders;
         opts.proxyRes && opts.proxyRes(proxyRes);
-        resHeaders = opts.handleResHeaders(proxyRes.headers, path);
+        if (opts.handleResHeaders) {
+          resHeaders = opts.handleResHeaders(proxyRes.headers, path);
+        } else {
+          resHeaders = proxyRes.headers;
+        }
         if (!kit.isEmptyOrNotObject(resHeaders)) {
           if (resHeaders['set-cookie']) {
             resHeaders['set-cookie'] = cookieReplace(resHeaders['set-cookie'], from.hostname, to.hostname);
@@ -237,6 +241,15 @@ proxy = function(opts) {
         }
         resHeaders = formatHeaders(resHeaders);
         return res.writeHead(proxyRes.statusCode, resHeaders);
+      });
+      proxyReq.on('error', function(e) {
+        var ref2;
+        if (e && ((ref2 = e.code) === 'ECONNREFUSED' || ref2 === 'ENOTFOUND')) {
+          kit.log(' fail << '.red + toHost + " (unreachable)".red);
+          return resolve(res);
+        } else {
+          return resPipeError(e);
+        }
       });
       req.on('error', resPipeError);
       return req.pipe(proxyReq);

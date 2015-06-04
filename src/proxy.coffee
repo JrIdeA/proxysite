@@ -73,7 +73,7 @@ cookieReplace = (cookieArr, fromHostname, toHostname) ->
         if matchedArr = REG.exec cookie
             matched = matchedArr[1]
             index = matchedCookie.lastIndexOf(matched)
-            if ~~index and index is matchedCookie.length - matched.length
+            if ~index and index is matchedCookie.length - matched.length
                 r = cookie.replace REG, (str, p1, p2, offset) ->
                     return "; domain=#{fromHostname}#{p2}"
                 return r
@@ -106,11 +106,11 @@ proxy = (opts) ->
         delete to.host
 
     (req, res) ->
-        resPipeError = (err) ->
-            res.end()
-            reject err
-
         new Promise (resolve, reject) ->
+            resPipeError = (err) ->
+                res.end()
+                reject err
+
             # 替换 url
             { pathname, search } = urlKit.parse req.url
             if !kit.isEmptyOrNotObject opts.pathMap
@@ -120,26 +120,26 @@ proxy = (opts) ->
 
             # 处理 req headers
             from = urlKit.parse 'http://' + req.headers.host
-            reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
+            if opts.handleReqHeaders
+                reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
             reqHeaders = formatHeaders reqHeaders
             reqHeaders.Host = to.hostname
             if reqHeaders.Referer
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
 
             requestParam = {
-                hostname: to.hostname
+                host: to.hostname
                 port: to.port or 80
                 method: req.method
                 path
                 headers: reqHeaders
             }
             if opts.ip
-                requestParam.host = opts.ip
-                delete requestParam.hostname
+                requestParam.hostname = opts.ip
             opts.beforeProxy and opts.beforeProxy(requestParam)
 
-            toHost = to.hostname + ':' + requestParam.port + requestParam.path
-            toHost += " (#{requestParam.host})".cyan if requestParam.host
+            toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
+            toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
             kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, (proxyRes) ->
@@ -175,24 +175,34 @@ proxy = (opts) ->
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
                     res.on 'finish', ->
-                        kit.log ' done << '.green + toHost
+                        kit.log " done << (#{res.statusCode}) ".green + toHost
                         resolve res
 
             proxyReq.on 'response', (proxyRes) ->
                 opts.proxyRes and opts.proxyRes(proxyRes)
-                resHeaders = opts.handleResHeaders proxyRes.headers, path
+                if opts.handleResHeaders
+                    resHeaders = opts.handleResHeaders proxyRes.headers, path
+                else
+                    resHeaders = proxyRes.headers
                 if !kit.isEmptyOrNotObject resHeaders
                     if resHeaders['set-cookie']
                         resHeaders['set-cookie'] = cookieReplace resHeaders['set-cookie'], from.hostname, to.hostname
 
                 # XXX
                 # 由于替换body时content-length不同于替换后的长度，会造成client端校验错误，
-                # 现先删去 content-length, 若处理完所有body再返回header，body过大则会造成client很长时间的等待
+                # 现先删去content-length，若处理完所有body再返回header，body过大则会造成client很长时间的等待
                 if opts.replaceBody
                     delete resHeaders['content-length']
 
                 resHeaders = formatHeaders resHeaders
                 res.writeHead proxyRes.statusCode, resHeaders
+
+            proxyReq.on 'error', (e) ->
+                if e and e.code in ['ECONNREFUSED', 'ENOTFOUND']
+                    kit.log ' fail << '.red + toHost + " (unreachable)".red
+                    resolve res
+                else
+                    resPipeError e
 
             req.on 'error', resPipeError
 

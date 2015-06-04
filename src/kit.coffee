@@ -4,11 +4,12 @@ toString = Object.prototype.toString
 kit =
     log: () ->
         console.log.apply console, arguments
+
     err: (msg) ->
         console.error msg
 
     # ES6 Object.assign shim
-    assign: Object.assign or (target, source) ->
+    assign: Object.assign or (target) ->
         unless target?
             throw new TypeError('Object.assign cannot be called with null or undefined')
         to = Object target

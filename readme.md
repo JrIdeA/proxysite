@@ -6,7 +6,7 @@
 编辑配置文件，比如 config.coffee
 ```coffee
 module.exports =
-    url: 'y.baidu.com'
+    url: 'jrist.me'
     port: 8888
 ```
 
@@ -42,7 +42,6 @@ module.exports =
     # '/abc' => '/bcd'
     pathMap: {}
 
-
     ###*
      * 替换内容，只针对文本的 content-type 做替换，支持正则表达式
      * 例如：
@@ -77,6 +76,7 @@ module.exports =
 
     ###*
      * 在代理发送请求前执行该回调, 供高级定制
+     * 注意：配置 opts.ip 的时候首先使用 requestParam.hostname
      * @param {Object} `requestParam` 传递给代理请求 http.request 的参数
     ###
     beforeProxy: (requestParam) ->
@@ -90,8 +90,9 @@ module.exports =
 ```
 
 ## 可编程接口
-将配置参数直接传递给 proxy，返回 `callback`
-接收两个参数:(req, res)，返回 Promise
+将配置参数直接传递给 proxy，
+返回函数接收两个参数:(req, res)，该函数返回`Promise`，
+例如：
 
 ```coffee
 proxy = require 'siteproxy/proxy'
@@ -100,3 +101,8 @@ handle = proxy opts
 http.createServer (req, res) ->
     handle(req, res)
 ```
+
+## TODO
+- [ ] https的支持
+- [ ] 301/302代理支持
+- [ ] 测试
