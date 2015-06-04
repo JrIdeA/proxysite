@@ -16,8 +16,8 @@ $ proxysite -u jrist.me -i 127.0.0.1 -p 8888
 
 支持的参数为
 ```
--u, --url [url]    proxy url
--i, --ip [ip]      force remote ip
+-u, --url [url]    proxy site's url
+-i, --ip [ip]      force proxy site's ip
 -p, --port <port>  local server port
 ```
 

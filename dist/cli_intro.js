@@ -16,7 +16,7 @@ version = require('../package.json').version;
 
 defaultOpts = require('./default.config');
 
-cmd.version(version).usage('\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me').option('-u, --url [url]', 'proxy url').option('-i, --ip [ip]', 'force remote ip').option('-p, --port <port>', 'local server port').parse(process.argv);
+cmd.version(version).usage('\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me').option('-u, --url [url]', "proxy site's url").option('-i, --ip [ip]', "force proxy site's ip").option('-p, --port <port>', 'local server port').parse(process.argv);
 
 confFile = cmd.args[0];
 
