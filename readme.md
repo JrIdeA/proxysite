@@ -104,4 +104,5 @@ http.createServer (req, res) ->
 
 ## TODO
 - [ ] https的支持
+- [ ] 301/302代理支持
 - [ ] 测试

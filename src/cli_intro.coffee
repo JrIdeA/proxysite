@@ -10,9 +10,12 @@ defaultOpts = require './default.config'
 cmd
     .version version
     .usage  '\n\n    siteproxy config.coffee'
+    .option '-u, --url', 'proxy url'
+    .option '-i, --ip', 'force remote ip'
+    .option '-p, --port', 'local server port'
     .parse process.argv
 
-confFile = cmd.args[0] or cmd.args[1]
+confFile = cmd.args[0]
 
 try
     if '.coffee' is path.extname confFile

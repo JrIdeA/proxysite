@@ -11,7 +11,7 @@ kit = {
   err: function(msg) {
     return console.error(msg);
   },
-  assign: Object.assign || function(target, source) {
+  assign: Object.assign || function(target) {
     var from, i, j, keys, l, to;
     if (target == null) {
       throw new TypeError('Object.assign cannot be called with null or undefined');
