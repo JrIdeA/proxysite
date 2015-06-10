@@ -36,9 +36,7 @@ describe 'cli', ->
                 timeout: 1500
                 cwd: __dirname
             }
-            (err, stdout, stderr) ->
-                console.log stdout
-                console.log stderr
+            (err, stdout, stderr) ->                
                 assert.ok ~stdout.indexOf('jrist.me')
                 done()
         )
