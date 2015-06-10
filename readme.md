@@ -97,7 +97,7 @@ module.exports =
 
     ###*
      * 在代理发送请求前执行该回调, 供高级定制
-     * 注意：配置 opts.ip 的时候首先使用 requestParam.hostname
+     * 注意：配置`opts.ip`的时候首先使用`requestParam.hostname`
      * @param {Object} `requestParam` 传递给代理请求 http.request 的参数
     ###
     beforeProxy: (requestParam) ->
@@ -112,18 +112,19 @@ module.exports =
 
 ## 可编程接口
 将配置参数直接传递给 proxy，
-返回函数接收两个参数:(req, res)，该函数返回`Promise`，
-例如：
+返回函数接收两个参数:(req, res)，
+该函数返回`Promise`。
 
+例如：
 ```coffee
 proxy = require 'proxysite'
 http = require 'http'
 handle = proxy opts
 http.createServer (req, res) ->
     handle(req, res)
+.listen 80
 ```
 
 ## TODO
 - [ ] https的支持
 - [ ] 301/302 自动跳转支持
-- [ ] 测试

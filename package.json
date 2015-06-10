@@ -1,11 +1,22 @@
 {
   "name": "proxysite",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "好用的代理站点的工具",
   "main": "dist/proxy.js",
   "bin": {
     "proxysite": "bin/proxysite.js"
   },
+  "scripts": {
+    "test": "mocha -r node_modules/coffee-script/lib/coffee-script/register test/test.coffee",
+    "prepublish": "cake build"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "src",
+    "Cakefile",
+    "readme.md"
+  ],
   "author": "JrIdeA",
   "repository": {
     "type": "git",
