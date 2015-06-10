@@ -86,7 +86,7 @@ resInnerError = (res) ->
     res.end()
 
 proxy = (opts) ->
-    if !opts.url
+    unless opts and opts.url
         throw new Error('No proxy url specified!')
 
     opts.replaceBody = formatReplaceOpt opts.replaceBody
