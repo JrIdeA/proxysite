@@ -1,4 +1,4 @@
-var cmd, confFile, defaultOpts, e, err, http, ip, kit, opts, path, port, proxy, proxyHandler, version;
+var cmd, cmdOpts, confFile, defaultOpts, e, err, http, ip, kit, opts, path, port, proxy, proxyHandler, version;
 
 require('colors');
 
@@ -16,9 +16,15 @@ version = require('../package.json').version;
 
 defaultOpts = require('./default.config');
 
-cmd.version(version).usage('\n\n    siteproxy config.coffee').option('-u, --url', 'proxy url').option('-i, --ip', 'force remote ip').option('-p, --port', 'local server port').parse(process.argv);
+cmd.version(version).usage('\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me').option('-u, --url [url]', "proxy site's url").option('-i, --ip [ip]', "force proxy site's ip").option('-p, --port <port>', 'local server port').parse(process.argv);
 
 confFile = cmd.args[0];
+
+cmdOpts = {
+  url: cmd.url,
+  ip: cmd.ip,
+  port: cmd.port
+};
 
 try {
   if ('.coffee' === path.extname(confFile)) {
@@ -29,13 +35,13 @@ try {
   err = _error;
   if (cmd.args.length > 0) {
     kit.err(err.stack);
+    process.exit(1);
   } else {
-    kit.err('No config specified!'.red);
+    kit.log('No config file specified!'.yellow);
   }
-  process.exit(1);
 }
 
-opts = kit.assign(defaultOpts, opts);
+opts = kit.extend(defaultOpts, cmdOpts, opts);
 
 ip = kit.getIp()[0] || '127.0.0.1';
 

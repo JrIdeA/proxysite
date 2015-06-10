@@ -3,6 +3,28 @@
 具有文本内容替换和地址重定向等功能
 
 ## 用例
+proxysite可以使用两种方式启动
+
+### 使用CLI
+
+直接运行命令
+```
+$ proxysite -u jrist.me -i 127.0.0.1 -p 8888
+```
+使用浏览器访问 `127.0.0.1:8888`
+
+
+支持的参数为
+```
+-u, --url [url]    proxy site's url
+-i, --ip [ip]      force proxy site's ip
+-p, --port <port>  local server port
+```
+
+### 使用配置文件
+
+使用配置文件可以提供更多高级功能。
+
 编辑配置文件，比如 config.coffee
 ```coffee
 module.exports =
@@ -14,7 +36,6 @@ module.exports =
 ```
 $ proxysite config.coffee
 ```
-
 使用浏览器访问 `127.0.0.1:8888`
 
 ## 安装
@@ -95,7 +116,7 @@ module.exports =
 例如：
 
 ```coffee
-proxy = require 'siteproxy/proxy'
+proxy = require 'proxysite'
 http = require 'http'
 handle = proxy opts
 http.createServer (req, res) ->
@@ -104,5 +125,5 @@ http.createServer (req, res) ->
 
 ## TODO
 - [ ] https的支持
-- [ ] 301/302代理支持
+- [ ] 301/302 自动跳转支持
 - [ ] 测试

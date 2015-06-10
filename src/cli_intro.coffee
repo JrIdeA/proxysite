@@ -9,13 +9,18 @@ defaultOpts = require './default.config'
 
 cmd
     .version version
-    .usage  '\n\n    siteproxy config.coffee'
-    .option '-u, --url', 'proxy url'
-    .option '-i, --ip', 'force remote ip'
-    .option '-p, --port', 'local server port'
+    .usage  '\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me'
+    .option '-u, --url [url]', "proxy site's url"
+    .option '-i, --ip [ip]', "force proxy site's ip"
+    .option '-p, --port <port>', 'local server port'
     .parse process.argv
 
 confFile = cmd.args[0]
+cmdOpts = {
+    url: cmd.url
+    ip: cmd.ip
+    port: cmd.port
+}
 
 try
     if '.coffee' is path.extname confFile
@@ -24,11 +29,11 @@ try
 catch err
     if cmd.args.length > 0
         kit.err err.stack
+        process.exit 1
     else
-        kit.err 'No config specified!'.red
-    process.exit 1
+        kit.log 'No config file specified!'.yellow
 
-opts = kit.assign defaultOpts, opts
+opts = kit.extend defaultOpts, cmdOpts, opts
 
 ip = kit.getIp()[0] or '127.0.0.1'
 port = opts.port

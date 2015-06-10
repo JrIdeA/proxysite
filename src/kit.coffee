@@ -8,22 +8,21 @@ kit =
     err: (msg) ->
         console.error msg
 
-    # ES6 Object.assign shim
-    assign: Object.assign or (target) ->
-        unless target?
-            throw new TypeError('Object.assign cannot be called with null or undefined')
+    extend: (target) ->
         to = Object target
 
-        i = 1
+        i = 0
         l = arguments.length
-        while i < l
+        while ++i < l
             from = arguments[i]
+            continue unless from?
             keys = Object.keys Object from
 
             j = keys.length
             while j--
-                to[keys[j]] = from[keys[j]]
-            i++
+                v = from[keys[j]]
+                continue unless v?
+                to[keys[j]] = v
 
         to
 

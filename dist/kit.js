@@ -11,22 +11,25 @@ kit = {
   err: function(msg) {
     return console.error(msg);
   },
-  assign: Object.assign || function(target) {
-    var from, i, j, keys, l, to;
-    if (target == null) {
-      throw new TypeError('Object.assign cannot be called with null or undefined');
-    }
+  extend: function(target) {
+    var from, i, j, keys, l, to, v;
     to = Object(target);
-    i = 1;
+    i = 0;
     l = arguments.length;
-    while (i < l) {
+    while (++i < l) {
       from = arguments[i];
+      if (from == null) {
+        continue;
+      }
       keys = Object.keys(Object(from));
       j = keys.length;
       while (j--) {
-        to[keys[j]] = from[keys[j]];
+        v = from[keys[j]];
+        if (v == null) {
+          continue;
+        }
+        to[keys[j]] = v;
       }
-      i++;
     }
     return to;
   },
