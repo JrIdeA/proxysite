@@ -1,55 +1,66 @@
 assert = require 'assert'
 {exec} = require 'child_process'
-nokit = require 'nokit'
-cli = require '../src/cli_intro'
+{ _ } = require 'nokit'
+proxy = require '../dist/proxy'
 
-sh = '../bin/siteproxy.js'
-
+sh = '../bin/proxysite.js'
 describe 'cli', ->
-    it '读取.coffee配置文件并生效', ->
+    it '读取.coffee配置文件并生效', (done) ->
         exec(
-            sh + ' ./config.coffee'
+            sh + ' ./fixtures/config.coffee'
             {
-                timeout: 2000
+                timeout: 1500
+                cwd: __dirname
             }
             (err, stdout, stderr) ->
-                assert.ok ~~stdout.indexOf('jrist.me')
+                assert.ok ~stdout.indexOf('jrist.me')
+                done()
         )
 
-    it '读取.js配置文件并生效', ->
+    it '读取.js配置文件并生效', (done) ->
         exec(
-            sh + ' ./config.js'
+            sh + ' ./fixtures/config.js'
             {
-                timeout: 2000
+                timeout: 1500
+                cwd: __dirname
             }
             (err, stdout, stderr) ->
-                assert.ok ~~stdout.indexOf('jrist.me')
+                assert.ok ~stdout.indexOf('jrist.me')
+                done()
         )
 
-    it '读取cli配置并生效', ->
+    it '读取cli配置并生效', (done) ->
         exec(
             sh + ' -u "jrist.me"'
             {
-                timeout: 2000
+                timeout: 1500
+                cwd: __dirname
             }
             (err, stdout, stderr) ->
-                assert.ok ~~stdout.indexOf('jrist.me')
+                console.log stdout
+                console.log stderr
+                assert.ok ~stdout.indexOf('jrist.me')
+                done()
         )
-    it '优先使用配置文件的配置', ->
+    it '优先使用配置文件的配置', (done) ->
         exec(
-            sh + ' -u "use-cli.me" proxy.coffee'
+            sh + ' -u "use-cli.me" ./fixtures/config.coffee'
             {
-                timeout: 2000
+                timeout: 1500
+                cwd: __dirname
             }
             (err, stdout, stderr) ->
-                assert.ok ~~stdout.indexOf('jrist.me')
+                assert.ok ~stdout.indexOf('jrist.me')
+                done()
         )
-    it 'cli选项可以任意位置', ->
+    it 'cli选项可以任意位置', (done) ->
         exec(
-            sh + ' proxy.coffee -u "use-cli.me"'
+            sh + ' ./fixtures/config.coffee -u "use-cli.me"'
             {
-                timeout: 2000
+                timeout: 1500
+                cwd: __dirname
             }
             (err, stdout, stderr) ->
-                assert.ok ~~stdout.indexOf('jrist.me')
+                assert.ok ~stdout.indexOf('jrist.me')
+                done()
         )
