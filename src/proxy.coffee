@@ -140,6 +140,7 @@ proxy = (opts) ->
 
             toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
             toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
+            toHost = opts.handleReqLog(toHost) if opts.handleReqLog
             kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, (proxyRes) ->
@@ -174,7 +175,7 @@ proxy = (opts) ->
 
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
-                    res.on 'finish', ->
+                    res.on 'finish', ->                        
                         kit.log " done << (#{res.statusCode}) ".green + toHost
                         resolve res
 

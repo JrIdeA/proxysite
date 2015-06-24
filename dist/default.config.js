@@ -4,6 +4,7 @@ module.exports = {
   port: 8234,
   pathMap: {},
   replaceBody: [],
+  autoRedirect: false,
   replaceLimit: 1048576,
   handleReqHeaders: function(headers) {
     return headers;

@@ -45,19 +45,19 @@ $ npm install -g proxysite
 
 ## 配置文件
 配置文件支持 .coffee 与 .js 后缀，配置需要用 module.exports 导出，
-以下是一个配置文件的示例，
-也是所有的选项和默认值
+根据用途（模块使用和工具使用），参数也有些不同，工具使用参数是模块使用参数的超集，
+以下是一个配置文件的示例，也是所有的选项和默认值
 ```coffee
 module.exports =
+    ######### 模块使用与工具使用共有参数 #########
+
     # 需要代理的网站
     # 类型为 String 或 Url 对象
     url: ''
+
     # 实际代理请求的ip地址，这个是可选的
     # 指定了则相当于设置了 hosts 文件
     ip: null
-
-    # 本机开的server端口
-    port: 8234
 
     # 访问的url做替换，完全匹配
     # '/abc' => '/bcd'
@@ -108,9 +108,17 @@ module.exports =
      * @param {Object} `proxyRes` 代理请求 http.request 返回的 response 对象
     ###
     afterProxy: (proxyRes) ->
+
+    ######### 仅当工具使用有的参数 #########
+
+    # 本机开的代理server的端口
+    port: 8234
+
+    # 自动重定向
+    autoRedirect: false
 ```
 
-## 可编程接口
+## 可编程接口（作为模块使用）
 将配置参数直接传递给 proxy，
 返回函数接收两个参数:(req, res)，
 该函数返回`Promise`。

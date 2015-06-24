@@ -1,4 +1,4 @@
-var cmd, cmdOpts, confFile, defaultOpts, e, err, http, ip, kit, localServer, opts, path, port, proxy, proxyHandler, version;
+var afterProxyArr, beforeProxyArr, cmd, cmdOpts, confFile, defaultOpts, e, err, fs, http, ip, kit, localServer, opts, path, pluginsDir, pluginsFiles, port, proxy, proxyHandler, version;
 
 require('colors');
 
@@ -11,6 +11,8 @@ http = require('http');
 kit = require('./kit');
 
 proxy = require('./proxy');
+
+fs = require('fs');
 
 version = require('../package.json').version;
 
@@ -48,10 +50,48 @@ ip = kit.getIp()[0] || '127.0.0.1';
 port = opts.port;
 
 try {
+  pluginsDir = __dirname + '/plugins/';
+  pluginsFiles = fs.readdirSync(pluginsDir).map(function(n) {
+    return pluginsDir + path.basename(n, '.js');
+  });
+  if (pluginsFiles.length) {
+    kit.log('>> Loading plugins:'.cyan);
+    beforeProxyArr = [opts.beforeProxy];
+    afterProxyArr = [opts.afterProxy];
+    pluginsFiles.map(function(n) {
+      var plugin;
+      plugin = require(n);
+      opts = kit.extend(opts, plugin.opts);
+      beforeProxyArr.unshift(plugin.beforeProxy);
+      afterProxyArr.unshift(plugin.afterProxy);
+      return kit.log('    ' + plugin.name + ' [loaded]'.green);
+    });
+    beforeProxyArr = kit.filterArrType(beforeProxyArr, 'function');
+    afterProxyArr = kit.filterArrType(afterProxyArr, 'function');
+    opts.beforeProxy = function() {
+      var i, len, n, results;
+      results = [];
+      for (i = 0, len = beforeProxyArr.length; i < len; i++) {
+        n = beforeProxyArr[i];
+        results.push(n.apply(this, arguments));
+      }
+      return results;
+    };
+    opts.afterProxy = function() {
+      var i, len, n, results;
+      results = [];
+      for (i = 0, len = afterProxyArr.length; i < len; i++) {
+        n = afterProxyArr[i];
+        results.push(n.apply(this, arguments));
+      }
+      return results;
+    };
+  }
   proxyHandler = proxy(opts);
 } catch (_error) {
   e = _error;
   kit.err(e.message.red);
+  kit.err(e.stack);
   process.exit(1);
 }
 

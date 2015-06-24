@@ -185,6 +185,9 @@ proxy = function(opts) {
       if (requestParam.hostname) {
         toHost += (" (" + requestParam.hostname + ")").cyan;
       }
+      if (opts.handleReqLog) {
+        toHost = opts.handleReqLog(toHost);
+      }
       kit.log('proxy >> '.yellow + toHost);
       proxyReq = http.request(requestParam, function(proxyRes) {
         var allStream, resHeaders, unzip, upStream, zip;
