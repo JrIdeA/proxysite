@@ -87,6 +87,17 @@ kit = {
       }
     }
     return r;
+  },
+  open: function(args) {
+    var cmd;
+    switch (process.platform) {
+      case 'darwin':
+        cmd = 'open ';
+        break;
+      case 'win32':
+        cmd = 'start';
+    }
+    return require('child_process').exec(cmd + args);
   }
 };
 

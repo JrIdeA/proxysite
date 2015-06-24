@@ -1,4 +1,4 @@
-var cmd, cmdOpts, confFile, defaultOpts, e, err, http, ip, kit, opts, path, port, proxy, proxyHandler, version;
+var cmd, cmdOpts, confFile, defaultOpts, e, err, http, ip, kit, localServer, opts, path, port, proxy, proxyHandler, version;
 
 require('colors');
 
@@ -16,7 +16,7 @@ version = require('../package.json').version;
 
 defaultOpts = require('./default.config');
 
-cmd.version(version).usage('\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me').option('-u, --url [url]', "proxy site's url").option('-i, --ip [ip]', "force proxy site's ip").option('-p, --port <port>', 'local server port').parse(process.argv);
+cmd.version(version).usage('\n\n   $ siteproxy config.js\n   $ siteproxy -u jrist.me').option('-u, --url [url]', "proxy site's url").option('-i, --ip [ip]', "force proxy site's ip").option('-p, --port <port>', 'local server port').option('-o, --openpage', 'open proxy page when proxy starting').parse(process.argv);
 
 confFile = cmd.args[0];
 
@@ -64,6 +64,12 @@ http.createServer(function(req, res) {
   });
 }).listen(port);
 
+localServer = ip + ":" + port;
+
 kit.log('\nProxy Site: '.cyan + opts.url);
 
-kit.log('Server start at '.cyan + (ip + ":" + port));
+kit.log('Server start at '.cyan + localServer);
+
+if (cmd.openpage) {
+  kit.open("http://" + localServer);
+}

@@ -69,4 +69,11 @@ kit =
             r.unshift arr[i] if arr[i] isnt undefined
         r
 
+    open: (args) ->
+        switch process.platform
+            when 'darwin' then cmd = 'open '
+            when 'win32' then cmd = 'start'
+        require 'child_process'
+            .exec cmd + args
+
 module.exports = kit

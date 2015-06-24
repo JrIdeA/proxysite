@@ -13,6 +13,7 @@ cmd
     .option '-u, --url [url]', "proxy site's url"
     .option '-i, --ip [ip]', "force proxy site's ip"
     .option '-p, --port <port>', 'local server port'
+    .option '-o, --openpage', 'open proxy page when proxy starting'
     .parse process.argv
 
 confFile = cmd.args[0]
@@ -50,5 +51,9 @@ http.createServer (req, res) ->
         kit.err err
 .listen port
 
+localServer = "#{ip}:#{port}"
 kit.log '\nProxy Site: '.cyan + opts.url
-kit.log 'Server start at '.cyan + "#{ip}:#{port}"
+kit.log 'Server start at '.cyan + localServer
+
+if cmd.openpage
+    kit.open "http://#{localServer}"
