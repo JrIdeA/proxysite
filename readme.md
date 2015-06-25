@@ -19,6 +19,7 @@ $ proxysite -u jrist.me -i 127.0.0.1 -p 8888
 -u, --url [url]    proxy site's url
 -i, --ip [ip]      force proxy site's ip
 -p, --port <port>  local server port
+-o, --openpage     open proxy page when proxy starting
 ```
 
 ### 使用配置文件

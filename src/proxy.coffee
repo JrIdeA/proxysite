@@ -111,38 +111,7 @@ proxy = (opts) ->
                 res.end()
                 reject err
 
-            # 替换 url
-            { pathname, search } = urlKit.parse req.url
-            if !kit.isEmptyOrNotObject opts.pathMap
-                pathname = opts.pathMap[pathname] or pathname
-            search = if search then search else ''
-            path = pathname + search
-
-            # 处理 req headers
-            from = urlKit.parse 'http://' + req.headers.host
-            if opts.handleReqHeaders
-                reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
-            reqHeaders = formatHeaders reqHeaders
-            reqHeaders.Host = to.hostname
-            if reqHeaders.Referer
-                reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
-
-            requestParam = {
-                host: to.hostname
-                port: to.port or 80
-                method: req.method
-                path
-                headers: reqHeaders
-            }
-            if opts.ip
-                requestParam.hostname = opts.ip
-            opts.beforeProxy and opts.beforeProxy(requestParam)
-
-            toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
-            toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
-            kit.log 'proxy >> '.yellow + toHost
-
-            proxyReq = http.request requestParam, (proxyRes) ->
+            proxyResHandle = (proxyRes) ->
                 resHeaders = proxyRes.headers
 
                 if !isReplaceContent(opts, resHeaders)
@@ -178,8 +147,8 @@ proxy = (opts) ->
                         kit.log " done << (#{res.statusCode}) ".green + toHost
                         resolve res
 
-            proxyReq.on 'response', (proxyRes) ->
-                opts.proxyRes and opts.proxyRes(proxyRes)
+            proxyHeaderHandle = (proxyRes) ->
+                opts.afterProxy and opts.afterProxy(proxyRes)
                 if opts.handleResHeaders
                     resHeaders = opts.handleResHeaders proxyRes.headers, path
                 else
@@ -197,13 +166,49 @@ proxy = (opts) ->
                 resHeaders = formatHeaders resHeaders
                 res.writeHead proxyRes.statusCode, resHeaders
 
-            proxyReq.on 'error', (e) ->
+            proxyErrorHandle = (e) ->
                 if e and e.code in ['ECONNREFUSED', 'ENOTFOUND']
                     kit.log ' fail << '.red + toHost + " (unreachable)".red
+                    res.statusCode = 503
+                    res.end()
                     resolve res
                 else
                     resPipeError e
 
+            # 替换 url
+            { pathname, search } = urlKit.parse req.url
+            if !kit.isEmptyOrNotObject opts.pathMap
+                pathname = opts.pathMap[pathname] or pathname
+            search = if search then search else ''
+            path = pathname + search
+
+            # 处理 req headers
+            from = urlKit.parse 'http://' + req.headers.host
+            if opts.handleReqHeaders
+                reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
+            reqHeaders = formatHeaders reqHeaders
+            reqHeaders.Host = to.hostname
+            if reqHeaders.Referer
+                reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
+
+            requestParam = {
+                host: to.hostname
+                port: to.port or 80
+                method: req.method
+                path
+                headers: reqHeaders
+            }
+            if opts.ip
+                requestParam.hostname = opts.ip
+            opts.beforeProxy and opts.beforeProxy(requestParam)
+
+            toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
+            toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
+            kit.log 'proxy >> '.yellow + toHost
+
+            proxyReq = http.request requestParam, proxyResHandle
+            proxyReq.on 'response', proxyHeaderHandle
+            proxyReq.on 'error', proxyErrorHandle
             req.on 'error', resPipeError
 
             req.pipe proxyReq

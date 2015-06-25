@@ -150,43 +150,12 @@ proxy = function(opts) {
   }
   return function(req, res) {
     return new Promise(function(resolve, reject) {
-      var from, path, pathname, proxyReq, ref1, reqHeaders, requestParam, resPipeError, search, toHost;
+      var from, path, pathname, proxyErrorHandle, proxyHeaderHandle, proxyReq, proxyResHandle, ref1, reqHeaders, requestParam, resPipeError, search, toHost;
       resPipeError = function(err) {
         res.end();
         return reject(err);
       };
-      ref1 = urlKit.parse(req.url), pathname = ref1.pathname, search = ref1.search;
-      if (!kit.isEmptyOrNotObject(opts.pathMap)) {
-        pathname = opts.pathMap[pathname] || pathname;
-      }
-      search = search ? search : '';
-      path = pathname + search;
-      from = urlKit.parse('http://' + req.headers.host);
-      if (opts.handleReqHeaders) {
-        reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
-      }
-      reqHeaders = formatHeaders(reqHeaders);
-      reqHeaders.Host = to.hostname;
-      if (reqHeaders.Referer) {
-        reqHeaders.Referer = reqHeaders.Referer.replace("http://" + from.host + "/", "http://" + to.hostname + "/");
-      }
-      requestParam = {
-        host: to.hostname,
-        port: to.port || 80,
-        method: req.method,
-        path: path,
-        headers: reqHeaders
-      };
-      if (opts.ip) {
-        requestParam.hostname = opts.ip;
-      }
-      opts.beforeProxy && opts.beforeProxy(requestParam);
-      toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path;
-      if (requestParam.hostname) {
-        toHost += (" (" + requestParam.hostname + ")").cyan;
-      }
-      kit.log('proxy >> '.yellow + toHost);
-      proxyReq = http.request(requestParam, function(proxyRes) {
+      proxyResHandle = function(proxyRes) {
         var allStream, resHeaders, unzip, upStream, zip;
         resHeaders = proxyRes.headers;
         if (!isReplaceContent(opts, resHeaders)) {
@@ -222,10 +191,10 @@ proxy = function(opts) {
             return resolve(res);
           });
         }
-      });
-      proxyReq.on('response', function(proxyRes) {
+      };
+      proxyHeaderHandle = function(proxyRes) {
         var resHeaders;
-        opts.proxyRes && opts.proxyRes(proxyRes);
+        opts.afterProxy && opts.afterProxy(proxyRes);
         if (opts.handleResHeaders) {
           resHeaders = opts.handleResHeaders(proxyRes.headers, path);
         } else {
@@ -241,16 +210,52 @@ proxy = function(opts) {
         }
         resHeaders = formatHeaders(resHeaders);
         return res.writeHead(proxyRes.statusCode, resHeaders);
-      });
-      proxyReq.on('error', function(e) {
-        var ref2;
-        if (e && ((ref2 = e.code) === 'ECONNREFUSED' || ref2 === 'ENOTFOUND')) {
+      };
+      proxyErrorHandle = function(e) {
+        var ref1;
+        if (e && ((ref1 = e.code) === 'ECONNREFUSED' || ref1 === 'ENOTFOUND')) {
           kit.log(' fail << '.red + toHost + " (unreachable)".red);
+          res.statusCode = 503;
+          res.end();
           return resolve(res);
         } else {
           return resPipeError(e);
         }
-      });
+      };
+      ref1 = urlKit.parse(req.url), pathname = ref1.pathname, search = ref1.search;
+      if (!kit.isEmptyOrNotObject(opts.pathMap)) {
+        pathname = opts.pathMap[pathname] || pathname;
+      }
+      search = search ? search : '';
+      path = pathname + search;
+      from = urlKit.parse('http://' + req.headers.host);
+      if (opts.handleReqHeaders) {
+        reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
+      }
+      reqHeaders = formatHeaders(reqHeaders);
+      reqHeaders.Host = to.hostname;
+      if (reqHeaders.Referer) {
+        reqHeaders.Referer = reqHeaders.Referer.replace("http://" + from.host + "/", "http://" + to.hostname + "/");
+      }
+      requestParam = {
+        host: to.hostname,
+        port: to.port || 80,
+        method: req.method,
+        path: path,
+        headers: reqHeaders
+      };
+      if (opts.ip) {
+        requestParam.hostname = opts.ip;
+      }
+      opts.beforeProxy && opts.beforeProxy(requestParam);
+      toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path;
+      if (requestParam.hostname) {
+        toHost += (" (" + requestParam.hostname + ")").cyan;
+      }
+      kit.log('proxy >> '.yellow + toHost);
+      proxyReq = http.request(requestParam, proxyResHandle);
+      proxyReq.on('response', proxyHeaderHandle);
+      proxyReq.on('error', proxyErrorHandle);
       req.on('error', resPipeError);
       return req.pipe(proxyReq);
     });
