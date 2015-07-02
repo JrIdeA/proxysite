@@ -1,6 +1,6 @@
 {
   "name": "proxysite",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "好用的代理站点的工具",
   "main": "dist/proxy.js",
   "bin": {

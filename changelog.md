@@ -1,5 +1,5 @@
 ### v0.2.0
-- add: 自动代理同域301、302的跳转，通过设置参数`autoRedirect: true`开启，只针对cli运行有效
+- add: 添加自动代理同域301、302的跳转，通过设置参数`autoRedirect: true`开启，只针对cli运行有效
 - upd: 升级依赖`replacestream`至4.0
 
 ### v0.1.2
