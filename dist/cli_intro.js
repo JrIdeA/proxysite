@@ -56,7 +56,7 @@ loadModules = function(opts) {
     return modulesDir + path.basename(n, '.js');
   });
   if (modulesFiles.length) {
-    kit.log('>> Loading modules:'.cyan);
+    kit.log('Loading modules'.cyan);
     beforeProxyArr = [opts.beforeProxy];
     afterProxyArr = [opts.afterProxy];
     modulesFiles.map(function(n) {
@@ -64,7 +64,8 @@ loadModules = function(opts) {
       module = require(n);
       if (kit.isFunction(module)) {
         module = module(opts);
-      } else if (!kit.isObject(module)) {
+      }
+      if (!kit.isObject(module)) {
         return;
       }
       opts = kit.extend(opts, module.opts);

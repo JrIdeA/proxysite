@@ -44,15 +44,15 @@ loadModules = (opts) ->
     modulesDir = __dirname + '/modules/'
     modulesFiles = fs.readdirSync(modulesDir).map (n) ->  modulesDir + path.basename(n, '.js')
     if modulesFiles.length
-        kit.log '>> Loading modules:'.cyan
+        kit.log 'Loading modules'.cyan
         beforeProxyArr = [opts.beforeProxy]
         afterProxyArr = [opts.afterProxy]
         modulesFiles.map (n) ->
             module = require n
             if kit.isFunction module
                 module = module(opts)
-            else if not kit.isObject module
-                return
+
+            return if not kit.isObject module
             opts = kit.extend opts, module.opts
             beforeProxyArr.unshift module.beforeProxy
             afterProxyArr.unshift module.afterProxy
