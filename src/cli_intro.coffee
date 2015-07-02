@@ -4,6 +4,7 @@ path = require 'path'
 http = require 'http'
 kit = require './kit'
 proxy = require './proxy'
+fs = require 'fs'
 { version } = require '../package.json'
 defaultOpts = require './default.config'
 
@@ -39,9 +40,31 @@ opts = kit.extend defaultOpts, cmdOpts, opts
 ip = kit.getIp()[0] or '127.0.0.1'
 port = opts.port
 try
+    # load plugins
+    pluginsDir = __dirname + '/plugins/'
+    pluginsFiles = fs.readdirSync(pluginsDir).map (n) ->  pluginsDir + path.basename(n, '.js')
+    if pluginsFiles.length
+        kit.log '>> Loading plugins:'.cyan
+        beforeProxyArr = [opts.beforeProxy]
+        afterProxyArr = [opts.afterProxy]
+        pluginsFiles.map (n) ->
+            plugin = require n
+            opts = kit.extend opts, plugin.opts
+            beforeProxyArr.unshift plugin.beforeProxy
+            afterProxyArr.unshift plugin.afterProxy
+            kit.log '    ' + plugin.name + ' [loaded]'.green
+        beforeProxyArr = kit.filterArrType beforeProxyArr, 'function'
+        afterProxyArr = kit.filterArrType afterProxyArr, 'function'
+        opts.beforeProxy = ->
+            n.apply(@, arguments) for n in beforeProxyArr
+        opts.afterProxy = ->
+            n.apply(@, arguments) for n in afterProxyArr
+
+    # initialize proxy!
     proxyHandler = proxy(opts)
 catch e
     kit.err e.message.red
+    kit.err e.stack
     process.exit 1
 
 http.createServer (req, res) ->

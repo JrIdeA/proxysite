@@ -77,6 +77,10 @@ kit = {
   isFullString: function(value) {
     return typeof value === 'string' && value.length;
   },
+
+  /**
+   * 将稀疏数组转换为密集数组
+   */
   compact: function(arr) {
     var i, r;
     r = [];
@@ -87,6 +91,28 @@ kit = {
       }
     }
     return r;
+  },
+
+  /**
+   * 只返回具有该类型的数据项的集合
+   * @param {String} `type` 类型
+   */
+  filterArrType: function(arr, type) {
+    var i, r;
+    r = [];
+    i = arr != null ? arr.length : void 0;
+    type = type.toLowerCase();
+    while (i--) {
+      if (type === kit.type(arr[i])) {
+        r.unshift(arr[i]);
+      }
+    }
+    return r;
+  },
+  type: function(mixin) {
+    var tmp;
+    tmp = toString.call(mixin).substr(8);
+    return tmp.toLowerCase().substr(0, tmp.length - 1);
   },
   open: function(args) {
     var cmd;

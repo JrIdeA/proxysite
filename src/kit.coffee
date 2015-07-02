@@ -61,13 +61,31 @@ kit =
     isFullString: (value) ->
         typeof value is 'string' and value.length
 
-    # 将稀疏数组转换为密集数组
+    ###*
+     * 将稀疏数组转换为密集数组
+    ###
     compact: (arr) ->
         r = []
         i = arr?.length
         while i--
             r.unshift arr[i] if arr[i] isnt undefined
         r
+
+    ###*
+     * 只返回具有该类型的数据项的集合
+     * @param {String} `type` 类型
+    ###
+    filterArrType: (arr, type) ->
+        r = []
+        i = arr?.length
+        type = type.toLowerCase()
+        while i--
+            r.unshift arr[i] if type is kit.type(arr[i])
+        r
+
+    type: (mixin) ->
+        tmp = toString.call(mixin).substr(8)
+        tmp.toLowerCase().substr 0, tmp.length-1
 
     open: (args) ->
         switch process.platform

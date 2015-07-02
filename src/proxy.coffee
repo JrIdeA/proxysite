@@ -110,7 +110,7 @@ proxy = (opts) ->
             resPipeError = (err) ->
                 res.end()
                 reject err
-
+                
             proxyResHandle = (proxyRes) ->
                 resHeaders = proxyRes.headers
 
@@ -204,6 +204,7 @@ proxy = (opts) ->
 
             toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
             toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
+            toHost = opts.handleReqLog(toHost) if opts.handleReqLog
             kit.log 'proxy >> '.yellow + toHost
 
             proxyReq = http.request requestParam, proxyResHandle
