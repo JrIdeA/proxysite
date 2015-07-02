@@ -194,7 +194,7 @@ proxy = function(opts) {
       };
       proxyHeaderHandle = function(proxyRes) {
         var resHeaders;
-        opts.afterProxy && opts.afterProxy(proxyRes);
+        opts.afterProxy && opts.afterProxy(proxyRes, requestParam, req, res);
         if (opts.handleResHeaders) {
           resHeaders = opts.handleResHeaders(proxyRes.headers, path);
         } else {
@@ -247,7 +247,7 @@ proxy = function(opts) {
       if (opts.ip) {
         requestParam.hostname = opts.ip;
       }
-      opts.beforeProxy && opts.beforeProxy(requestParam);
+      opts.beforeProxy && opts.beforeProxy(requestParam, req, res);
       toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path;
       if (requestParam.hostname) {
         toHost += (" (" + requestParam.hostname + ")").cyan;

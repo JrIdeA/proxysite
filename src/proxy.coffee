@@ -148,7 +148,7 @@ proxy = (opts) ->
                         resolve res
 
             proxyHeaderHandle = (proxyRes) ->
-                opts.afterProxy and opts.afterProxy(proxyRes)
+                opts.afterProxy and opts.afterProxy(proxyRes, requestParam, req, res)
                 if opts.handleResHeaders
                     resHeaders = opts.handleResHeaders proxyRes.headers, path
                 else
@@ -200,7 +200,7 @@ proxy = (opts) ->
             }
             if opts.ip
                 requestParam.hostname = opts.ip
-            opts.beforeProxy and opts.beforeProxy(requestParam)
+            opts.beforeProxy and opts.beforeProxy(requestParam, req, res)
 
             toHost = 'http://' + requestParam.host + ':' + requestParam.port + requestParam.path
             toHost += " (#{requestParam.hostname})".cyan if requestParam.hostname
