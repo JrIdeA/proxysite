@@ -136,4 +136,3 @@ http.createServer (req, res) ->
 
 ## TODO
 - [ ] https的支持
-- [ ] 301/302 自动跳转支持

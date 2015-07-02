@@ -1,6 +1,6 @@
 {
   "name": "proxysite",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "好用的代理站点的工具",
   "main": "dist/proxy.js",
   "bin": {
@@ -28,11 +28,11 @@
     "tool"
   ],
   "dependencies": {
-    "bluebird": "2.9.30",
-    "coffee-script": "1.9.3",
-    "colors": "1.1.2",
-    "commander": "2.8.1",
-    "replacestream": "2.1.0"
+    "bluebird": "~2.9.30",
+    "coffee-script": "~1.9.3",
+    "colors": "~1.1.2",
+    "commander": "~2.8.1",
+    "replacestream": "4.0.0"
   },
   "devDependencies": {
     "mocha": "2.2.5",
