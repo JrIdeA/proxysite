@@ -28,6 +28,11 @@ task 'dev', 'In dev, Watch all file', ->
     }
 
 task 'build', 'Build all source code.', ->
-    glob join(srcPath, '**', '*.coffee')
-    .then (files) ->
-        buildFiles(files)
+    fs.remove distPath
+    .catch (e) ->
+        console.error e
+        process.exit 1
+    .then ->
+        glob join(srcPath, '**', '*.coffee')
+        .then (files) ->
+            buildFiles(files)

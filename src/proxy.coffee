@@ -110,7 +110,7 @@ proxy = (opts) ->
             resPipeError = (err) ->
                 res.end()
                 reject err
-                
+
             proxyResHandle = (proxyRes) ->
                 resHeaders = proxyRes.headers
 
@@ -144,6 +144,7 @@ proxy = (opts) ->
                     proxyRes.on 'error', resPipeError
                     res.on 'error', resPipeError
                     res.on 'finish', ->
+                        # FIXME 302时没有log
                         kit.log " done << (#{res.statusCode}) ".green + toHost
                         resolve res
 

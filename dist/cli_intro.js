@@ -1,4 +1,4 @@
-var afterProxyArr, beforeProxyArr, cmd, cmdOpts, confFile, defaultOpts, e, err, fs, http, ip, kit, localServer, opts, path, pluginsDir, pluginsFiles, port, proxy, proxyHandler, version;
+var cmd, cmdOpts, confFile, defaultOpts, e, err, fs, http, ip, kit, loadModules, localServer, opts, path, port, proxy, proxyHandler, version;
 
 require('colors');
 
@@ -49,22 +49,28 @@ ip = kit.getIp()[0] || '127.0.0.1';
 
 port = opts.port;
 
-try {
-  pluginsDir = __dirname + '/plugins/';
-  pluginsFiles = fs.readdirSync(pluginsDir).map(function(n) {
-    return pluginsDir + path.basename(n, '.js');
+loadModules = function(opts) {
+  var afterProxyArr, beforeProxyArr, modulesDir, modulesFiles;
+  modulesDir = __dirname + '/modules/';
+  modulesFiles = fs.readdirSync(modulesDir).map(function(n) {
+    return modulesDir + path.basename(n, '.js');
   });
-  if (pluginsFiles.length) {
-    kit.log('>> Loading plugins:'.cyan);
+  if (modulesFiles.length) {
+    kit.log('>> Loading modules:'.cyan);
     beforeProxyArr = [opts.beforeProxy];
     afterProxyArr = [opts.afterProxy];
-    pluginsFiles.map(function(n) {
-      var plugin;
-      plugin = require(n);
-      opts = kit.extend(opts, plugin.opts);
-      beforeProxyArr.unshift(plugin.beforeProxy);
-      afterProxyArr.unshift(plugin.afterProxy);
-      return kit.log('    ' + plugin.name + ' [loaded]'.green);
+    modulesFiles.map(function(n) {
+      var module;
+      module = require(n);
+      if (kit.isFunction(module)) {
+        module = module(opts);
+      } else if (!kit.isObject(module)) {
+        return;
+      }
+      opts = kit.extend(opts, module.opts);
+      beforeProxyArr.unshift(module.beforeProxy);
+      afterProxyArr.unshift(module.afterProxy);
+      return kit.log('    ' + module.name + ' [loaded]'.green);
     });
     beforeProxyArr = kit.filterArrType(beforeProxyArr, 'function');
     afterProxyArr = kit.filterArrType(afterProxyArr, 'function');
@@ -87,6 +93,11 @@ try {
       return results;
     };
   }
+  return opts;
+};
+
+try {
+  opts = loadModules(opts);
   proxyHandler = proxy(opts);
 } catch (_error) {
   e = _error;

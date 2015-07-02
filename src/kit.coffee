@@ -61,6 +61,9 @@ kit =
     isFullString: (value) ->
         typeof value is 'string' and value.length
 
+    isFunction: (value) ->
+        'function' is kit.type value 
+
     ###*
      * 将稀疏数组转换为密集数组
     ###

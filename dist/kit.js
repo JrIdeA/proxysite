@@ -77,6 +77,9 @@ kit = {
   isFullString: function(value) {
     return typeof value === 'string' && value.length;
   },
+  isFunction: function(value) {
+    return 'function' === kit.type(value);
+  },
 
   /**
    * 将稀疏数组转换为密集数组
