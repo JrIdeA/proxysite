@@ -1,9 +1,9 @@
 assert = require 'assert'
-{exec} = require 'child_process'
 request = require 'supertest'
 http = require 'http'
-proxy = require '../dist/proxy'
+proxy = require '../src/proxy'
 { _, fs } = require 'nokit'
+{coffee} = require './helper'
 
 configPath = './fixtures/config'
 
@@ -40,8 +40,8 @@ describe 'proxy', ->
         assert.throws proxy, /No proxy url specified/
 
     it 'replaceBody配置格式支持{ from: to }', (done) ->
-        exec(
-            'node ./fixtures/bin/replacebody_basic_opts.js'
+        coffee(
+            './fixtures/bin/replacebody_basic_opts.coffee'
             cwd: __dirname
             (err, stdout, stderr) ->
                 assert.ok ~stdout.indexOf('replace_from -> replace_to')
@@ -49,8 +49,8 @@ describe 'proxy', ->
         )
 
     it 'replaceBody配置格式支持[[from1, to1], [from2, to2]]', (done) ->
-        exec(
-            'node ./fixtures/bin/replacebody_arr_opts.js'
+        coffee(
+            './fixtures/bin/replacebody_arr_opts.coffee'
             cwd: __dirname
             (err, stdout, stderr) ->
                 assert.ok(
@@ -61,8 +61,8 @@ describe 'proxy', ->
         )
 
     it 'replaceBody配置格式支持组合式 [{ from1: to1 }, [from2, to2]]', (done) ->
-        exec(
-            'node ./fixtures/bin/replacebody_combine_opts.js'
+        coffee(
+            './fixtures/bin/replacebody_combine_opts.coffee'
             cwd: __dirname
             (err, stdout, stderr) ->
                 assert.ok(
