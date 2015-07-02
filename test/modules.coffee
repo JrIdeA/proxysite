@@ -1,7 +1,7 @@
 assert = require 'assert'
 request = require 'supertest'
 http = require 'http'
-proxy = require '../src/proxy'
+{exec} = require './helper'
 
 describe 'auto_redirect', ->
     EXPECT_STR = 'NEW_PAGE'
@@ -38,11 +38,23 @@ describe 'auto_redirect', ->
                 res.end 'index'
     redirectServer.listen 7100
 
-    server = http.createServer proxy {
-        url: '127.0.0.1:7100'
-        autoRedirect: true
-    }
-    server.listen 7102
+    server = '127.0.0.1:7102'
+
+    before (done) ->
+        # FIXME
+        # 有没启动完成的callback，利用 setTimeout 肯定是不好的
+        exec(
+            './fixtures/conf/auto_redirect.coffee'
+            {
+                cwd: __dirname
+            },
+            (err, stdout, stderr) ->
+                done(err)
+                clearTimeout timer
+        )
+        timer = setTimeout ->
+            done()
+        , 1500
 
     # supertest 对于测试 redirect 的方法
     # http://stackoverflow.com/questions/12272228/testing-requests-that-redirect-with-mocha-supertest-in-node
