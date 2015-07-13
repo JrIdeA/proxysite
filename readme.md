@@ -2,6 +2,8 @@
 这是一个能够代理某个站点的工具，
 具有文本内容替换和地址重定向等功能
 
+[![npm version](https://badge.fury.io/js/proxysite.svg)](http://badge.fury.io/js/proxysite)
+
 ## 用例
 proxysite可以使用两种方式启动
 
