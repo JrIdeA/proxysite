@@ -1,7 +1,7 @@
 assert = require 'assert'
 request = require 'supertest'
 http = require 'http'
-{exec} = require './helper'
+{spawn} = require './helper'
 
 describe 'modules', ->
     describe 'auto_redirect', ->
@@ -41,21 +41,22 @@ describe 'modules', ->
 
         server = '127.0.0.1:7102'
 
+        child = null
         before (done) ->
-            # FIXME
-            # 有没启动完成的callback，利用 setTimeout 肯定是不好的
-            exec(
+            child = spawn(
                 './fixtures/conf/auto_redirect.coffee'
                 {
                     cwd: __dirname
-                },
-                (err, stdout, stderr) ->
-                    done(err)
-                    clearTimeout timer
+                }
             )
-            timer = setTimeout ->
-                done()
-            , 1500
+            child.stderr.once 'error', (err) -> done(err)
+            doneHandle = (data) ->
+                if ~data.toString().indexOf 'Server start'
+                    child.stderr.removeListener 'data', doneHandle
+                    done()
+            child.stdout.on 'data', doneHandle
+        after ->
+            child.kill()
 
         # supertest 对于测试 redirect 的方法
         # http://stackoverflow.com/questions/12272228/testing-requests-that-redirect-with-mocha-supertest-in-node
