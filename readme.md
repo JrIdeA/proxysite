@@ -3,6 +3,7 @@
 具有文本内容替换和地址重定向等功能
 
 [![npm version](https://badge.fury.io/js/proxysite.svg)](http://badge.fury.io/js/proxysite)
+[![Build Status](https://travis-ci.org/JrIdeA/proxysite.svg?branch=master)](https://travis-ci.org/JrIdeA/proxysite)
 
 ## 用例
 proxysite可以使用两种方式启动
