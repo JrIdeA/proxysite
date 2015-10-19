@@ -22,6 +22,7 @@
     "type": "git",
     "url": "https://github.com/JrIdeA/proxysite.git"
   },
+  "license": "MIT",
   "keywords": [
     "proxy",
     "agent",
