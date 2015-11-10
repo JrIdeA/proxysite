@@ -228,7 +228,11 @@ proxy = function(opts) {
       }
       search = search ? search : '';
       path = pathname + search;
+      if (opts.keepPathname) {
+        path = to.pathname + path;
+      }
       from = urlKit.parse('http://' + req.headers.host);
+      reqHeaders = req.headers;
       if (opts.handleReqHeaders) {
         reqHeaders = opts.handleReqHeaders(req.headers, path) || {};
       }

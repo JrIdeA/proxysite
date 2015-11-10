@@ -3,7 +3,8 @@ request = require 'supertest'
 http = require 'http'
 proxy = require '../src/proxy'
 { _, fs } = require 'nokit'
-{coffee} = require './helper'
+helper = require './helper'
+{coffee} = helper
 
 configPath = './fixtures/config'
 
@@ -176,4 +177,73 @@ describe 'proxy', ->
         .get '/'
         .expect 'proxysite', headerValue
         .expect 'server', headerServer
+        .end done
+
+    it 'options.keepPathname 有效', (done) ->
+        urlPath = '/urlpath'
+        requestPathname = '/abc/path'
+        fullPathname = urlPath + requestPathname
+        url = require 'url'
+        http.createServer (req, res) ->
+            pathname = url.parse(req.url).pathname
+            res.end pathname
+        .listen 7006
+        conf = {
+            url: 'http://127.0.0.1:7006' + urlPath
+        }
+        doneCreator = helper.allDone(done);
+
+        doneTrue = doneCreator()
+        serverTrue = http.createServer proxy _.assign({keepPathname: true}, conf)
+        request serverTrue
+        .get requestPathname
+        .expect fullPathname
+        .end doneTrue
+
+        doneFalse = doneCreator()
+        serverFalse = http.createServer proxy _.assign({keepPathname: false}, conf)
+        request serverFalse
+        .get requestPathname
+        .expect requestPathname
+        .end doneFalse
+
+    it 'POST 测试', (done) ->
+        expectStr = 'POST OK!'
+        http.createServer (req, res) ->
+            if req.method is 'POST'
+                res.end expectStr
+            else
+                res.end 'nonono'
+        .listen 7008
+
+        conf = {
+            url: 'http://127.0.0.1:7008'
+        }
+        server = http.createServer(proxy(conf))
+        request server
+        .post '/'
+        .expect expectStr
+        .end done
+
+    it '源client headers直接转发', (done) ->
+        expectStr = 'client headers OK!'
+        expectContentType = 'appliction/json'
+        expectCustomKey = 'x-custom-proxysite'
+        expectCustomValue = 'ps'
+        http.createServer (req, res) ->
+            if req.headers['content-type'] is expectContentType and req.headers[expectCustomKey] is expectCustomValue
+                res.end expectStr
+            else
+                res.end 'nonono'
+        .listen 7010
+
+        conf = {
+            url: 'http://127.0.0.1:7010'
+        }
+        server = http.createServer(proxy(conf))
+        request server
+        .get '/'
+        .set 'Content-Type', expectContentType
+        .set expectCustomKey, expectCustomValue
+        .expect expectStr
         .end done

@@ -2,6 +2,7 @@ module.exports = {
   url: '',
   ip: null,
   port: 8234,
+  keepPathname: false,
   pathMap: {},
   replaceBody: [],
   autoRedirect: false,

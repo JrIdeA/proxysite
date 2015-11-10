@@ -182,16 +182,18 @@ proxy = (opts) ->
                 pathname = opts.pathMap[pathname] or pathname
             search = if search then search else ''
             path = pathname + search
+            if opts.keepPathname
+                path = to.pathname + path
 
             # 处理 req headers
             from = urlKit.parse 'http://' + req.headers.host
+            reqHeaders = req.headers
             if opts.handleReqHeaders
                 reqHeaders = opts.handleReqHeaders(req.headers, path) || {}
             reqHeaders = formatHeaders reqHeaders
             reqHeaders.Host = to.hostname
             if reqHeaders.Referer
                 reqHeaders.Referer = reqHeaders.Referer.replace "http://#{from.host}/", "http://#{to.hostname}/"
-
             requestParam = {
                 host: to.hostname
                 port: to.port or 80

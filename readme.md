@@ -63,6 +63,11 @@ module.exports =
     # 指定了则相当于设置了 hosts 文件
     ip: null
 
+    # 是否保留 url 中的 pathname
+    # true 则 jrist.me/abc，则 jrist.me/abc/test 代理为 localhost/abc/test
+    # false 则 jrist.me/abc/test 代理为 localhost/test
+    keepPathname: false
+
     # 访问的url做替换，完全匹配
     # '/abc' => '/bcd'
     pathMap: {}
